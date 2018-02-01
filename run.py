@@ -48,7 +48,7 @@ def alert_celery_kombu(item, original):
     if item['status']['progress'] == 'Completed':
         # Create connection details
         task_exchange = Exchange('', type='direct')
-        connection = Connection('amqp://localhost:5672/')
+        connection = Connection('amqp://rabbitmq:5672/')
         channel = connection.channel()
         # Generate Producer
         producer = Producer(
@@ -141,4 +141,4 @@ def after_request(response):
 app.on_updated_jobs += alert_celery_kombu
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0', port=5000)

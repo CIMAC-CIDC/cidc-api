@@ -3,7 +3,7 @@
 Settings file that lays out the database schema, as well as other constant variables.
 """
 
-MONGO_HOST = 'localhost'
+MONGO_HOST = 'mongodb'
 MONGO_PORT = 27017
 MONGO_USERNAME = 'python-eve'
 MONGO_PASSWORD = 'apple'
