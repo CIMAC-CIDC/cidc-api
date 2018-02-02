@@ -12,6 +12,7 @@ flask = "*"
 kombu = "*"
 celery = "*"
 asyncio = "*"
+sphinx = "*"
 
 
 [dev-packages]
