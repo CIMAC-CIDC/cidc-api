@@ -187,5 +187,9 @@ app.on_insert_jobs += log_file_upload
 app.on_inserted_jobs += log_upload_complete
 app.post_GET_test += test_endpoint_logger
 
+
+def create_app():
+    return app.run(host='0.0.0.0', port=5000)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
