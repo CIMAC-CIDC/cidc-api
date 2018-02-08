@@ -10,6 +10,7 @@ MONGO_PASSWORD = 'apple'
 MONGO_DBNAME = 'CIDC'
 GOOGLE_URL = "gs://lloyd-test-pipeline/"
 GOOGLE_FOLDER_PATH = "Experimental-Data/"
+RABBITMQ_URI = "rabbitmq:5762"
 
 # If this line is missing API will default to GET only
 RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
@@ -86,7 +87,18 @@ JOBS = {
     },
 }
 
+TEST = {
+    'schema': {
+        'message': {
+            'type': 'string',
+            'required': False
+        }
+    },
+    'authentication': None
+}
+
 DOMAIN = {
     'accounts': ACCOUNTS,
     'jobs': JOBS,
+    'test': TEST
 }

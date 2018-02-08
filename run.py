@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 This file defines the basic behavior of the eve application.
 
@@ -9,11 +9,19 @@ import os
 import uuid
 import asyncio
 import json
+import logging
 from kombu import Connection, Exchange, Producer
 from eve import Eve
 from eve.auth import TokenAuth
 from flask import current_app as app
 from celery import Celery
+from rabbit_handler import RabbitMQHandler
+
+
+LOGGER = logging.getLogger('ingestion-api')
+LOGGER.setLevel(logging.DEBUG)
+RABBIT = RabbitMQHandler('amqp://rabbitmq')
+LOGGER.addHandler(RABBIT)
 
 
 class TokenAuth(TokenAuth):
@@ -37,6 +45,17 @@ class TokenAuth(TokenAuth):
         return accounts.find_one({'token': token})
 
 
+def log_file_patched(items):
+    """
+    Logs when the job has been updated with google URIs
+
+    Arguments:
+        items {[type]} -- [description]
+    """
+    for item in items:
+        LOGGER.debug("Google Upload for item completed")
+
+
 def alert_celery_kombu(item, original):
     """Sends the details of the uploaded job to Celery, which will in turn start Cromwell
 
@@ -44,11 +63,10 @@ def alert_celery_kombu(item, original):
         item {dict} -- Updated mongo object represented completed job.
         original {dict} -- Original mongo object before update.
     """
-    print(item)
     if item['status']['progress'] == 'Completed':
         # Create connection details
         task_exchange = Exchange('', type='direct')
-        connection = Connection('amqp://rabbitmq:5672/')
+        connection = Connection('amqp://rabbitmq')
         channel = connection.channel()
         # Generate Producer
         producer = Producer(
@@ -59,8 +77,8 @@ def alert_celery_kombu(item, original):
         )
         # Construct data
         payload = {
-            "id": 12345,
-            "task": "tasks.run_cromwell",
+            "id": 1234,
+            "task": "framework.tasks.cromwell_tasks.run_cromwell",
             "args": [json.dumps(item['files'])],
             "kwargs": {},
             "retries": 0
@@ -72,6 +90,7 @@ def alert_celery_kombu(item, original):
             content_encoding='utf-8'
         )
         connection.release()
+        LOGGER.debug("Item upload complete, mongo patch complete")
 
 
 async def alert_celery_native(item, original):
@@ -96,14 +115,6 @@ async def alert_celery_native(item, original):
     print('done: ' + response.get())
 
 
-async def do_something():
-    """Sample async function to demonstrate yielding behavior
-    """
-    print("test test test")
-    asyncio.sleep(0.5)
-    print("test2 test2 test2")
-
-
 def celery_event_loop(item, original):
     """Schedules asynchronous celery tasks to demonstrate that
     waiting for the job to return is non-blocking.
@@ -119,6 +130,39 @@ def celery_event_loop(item, original):
     loop.run_until_complete(wait_tasks)
 
 app = Eve(auth=TokenAuth, settings='settings.py')
+
+
+def log_file_upload(items):
+    """
+    Logs when file upload begins
+
+    Arguments:
+        item {[dict]} -- [description]
+    """
+    for item in items:
+        LOGGER.debug('Record insertion for job begun')
+
+
+def log_upload_complete(items):
+    """
+    Logs completed file uploads
+    Arguments:
+        items {[type]} -- [description]
+    """
+    for item in items:
+        log_string = 'Record creation completed for: '
+        LOGGER.debug(log_string)
+
+
+def test_endpoint_logger(items):
+    """
+    Simple endpoint to test features without running a pipeline
+
+    Arguments:
+        items {[type]} -- [description]
+    """
+    for item in items:
+        LOGGER.info('test endpoint called')
 
 
 @app.after_request
@@ -139,6 +183,9 @@ def after_request(response):
     return response
 
 app.on_updated_jobs += alert_celery_kombu
+app.on_insert_jobs += log_file_upload
+app.on_inserted_jobs += log_upload_complete
+app.post_GET_test += test_endpoint_logger
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
