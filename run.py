@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 This file defines the basic behavior of the eve application.
 
@@ -20,8 +20,8 @@ from rabbit_handler import RabbitMQHandler
 
 LOGGER = logging.getLogger('ingestion-api')
 LOGGER.setLevel(logging.DEBUG)
-RH = RabbitMQHandler('amqp://' + app.config['RABBITMQ_URI'])
-LOGGER.addHandler(RH)
+RABBIT = RabbitMQHandler('amqp://rabbitmq')
+LOGGER.addHandler(RABBIT)
 
 
 class TokenAuth(TokenAuth):
@@ -53,7 +53,7 @@ def log_file_patched(items):
         items {[type]} -- [description]
     """
     for item in items:
-        LOGGER.debug("Google Upload for item completed: " + item)
+        LOGGER.debug("Google Upload for item completed")
 
 
 def alert_celery_kombu(item, original):
@@ -66,7 +66,7 @@ def alert_celery_kombu(item, original):
     if item['status']['progress'] == 'Completed':
         # Create connection details
         task_exchange = Exchange('', type='direct')
-        connection = Connection('amqp://' + app.config['RABBITMQ_URI'])
+        connection = Connection('amqp://rabbitmq')
         channel = connection.channel()
         # Generate Producer
         producer = Producer(
@@ -77,8 +77,8 @@ def alert_celery_kombu(item, original):
         )
         # Construct data
         payload = {
-            "id": 12345,
-            "task": "tasks.run_cromwell",
+            "id": 1234,
+            "task": "framework.tasks.cromwell_tasks.run_cromwell",
             "args": [json.dumps(item['files'])],
             "kwargs": {},
             "retries": 0
@@ -90,7 +90,7 @@ def alert_celery_kombu(item, original):
             content_encoding='utf-8'
         )
         connection.release()
-        LOGGER.debug("Item upload complete, mongo patched for Item: " + item)
+        LOGGER.debug("Item upload complete, mongo patch complete")
 
 
 async def alert_celery_native(item, original):
@@ -140,7 +140,7 @@ def log_file_upload(items):
         item {[dict]} -- [description]
     """
     for item in items:
-        LOGGER.debug('Record insertion for job begun: ' + item)
+        LOGGER.debug('Record insertion for job begun')
 
 
 def log_upload_complete(items):
@@ -150,7 +150,19 @@ def log_upload_complete(items):
         items {[type]} -- [description]
     """
     for item in items:
-        LOGGER.debug('Record creation completed for: ' + item)
+        log_string = 'Record creation completed for: '
+        LOGGER.debug(log_string)
+
+
+def test_endpoint_logger(items):
+    """
+    Simple endpoint to test features without running a pipeline
+
+    Arguments:
+        items {[type]} -- [description]
+    """
+    for item in items:
+        LOGGER.info('test endpoint called')
 
 
 @app.after_request
@@ -173,7 +185,7 @@ def after_request(response):
 app.on_updated_jobs += alert_celery_kombu
 app.on_insert_jobs += log_file_upload
 app.on_inserted_jobs += log_upload_complete
-
+app.post_GET_test += test_endpoint_logger
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

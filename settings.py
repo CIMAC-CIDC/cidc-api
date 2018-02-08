@@ -87,7 +87,18 @@ JOBS = {
     },
 }
 
+TEST = {
+    'schema': {
+        'message': {
+            'type': 'string',
+            'required': False
+        }
+    },
+    'authentication': None
+}
+
 DOMAIN = {
     'accounts': ACCOUNTS,
     'jobs': JOBS,
+    'test': TEST
 }
