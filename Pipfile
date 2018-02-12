@@ -13,7 +13,7 @@ kombu = "*"
 celery = "*"
 asyncio = "*"
 sphinx = "*"
-nose = "*"
+"nose2" = "*"
 
 
 [dev-packages]

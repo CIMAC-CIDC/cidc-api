@@ -7,4 +7,4 @@ RUN pip install pipenv
 
 RUN pipenv install --system
 
-CMD ["python", "run.py"] 
+CMD ["python", "ingestion_api.py"] 

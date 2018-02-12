@@ -10,6 +10,7 @@ import uuid
 import asyncio
 import json
 import logging
+import argparse
 from kombu import Connection, Exchange, Producer
 from eve import Eve
 from eve.auth import TokenAuth
@@ -17,11 +18,11 @@ from flask import current_app as app
 from celery import Celery
 from rabbit_handler import RabbitMQHandler
 
-
+PARSER = argparse.ArgumentParser()
+PARSER.add_argument('-t', '--test', help='Run application in test mode', action='store_true')
+ARGS = PARSER.parse_args()
 LOGGER = logging.getLogger('ingestion-api')
 LOGGER.setLevel(logging.DEBUG)
-RABBIT = RabbitMQHandler('amqp://rabbitmq')
-LOGGER.addHandler(RABBIT)
 
 
 class TokenAuth(TokenAuth):
@@ -54,6 +55,11 @@ def log_file_patched(items):
     """
     for item in items:
         LOGGER.debug("Google Upload for item completed")
+
+
+def add_rabbit_handler():
+    RABBIT = RabbitMQHandler('amqp://rabbitmq')
+    LOGGER.addHandler(RABBIT)
 
 
 def alert_celery_kombu(item, original):
@@ -129,8 +135,6 @@ def celery_event_loop(item, original):
     wait_tasks = asyncio.wait([task1, task2])
     loop.run_until_complete(wait_tasks)
 
-app = Eve(auth=TokenAuth, settings='settings.py')
-
 
 def log_file_upload(items):
     """
@@ -161,8 +165,12 @@ def test_endpoint_logger(items):
     Arguments:
         items {[type]} -- [description]
     """
+    print('method called!!!!')
     for item in items:
         LOGGER.info('test endpoint called')
+
+
+app = Eve('ingestion_api', auth=TokenAuth, settings='settings.py')
 
 
 @app.after_request
@@ -182,14 +190,19 @@ def after_request(response):
     response.headers.add('google_folder_path', app.config['GOOGLE_FOLDER_PATH'])
     return response
 
-app.on_updated_jobs += alert_celery_kombu
-app.on_insert_jobs += log_file_upload
-app.on_inserted_jobs += log_upload_complete
-app.post_GET_test += test_endpoint_logger
-
 
 def create_app():
-    return app.run(host='0.0.0.0', port=5000)
+    app.on_updated_jobs += alert_celery_kombu
+    app.on_insert_jobs += log_file_upload
+    app.on_inserted_jobs += log_upload_complete
+    app.post_GET_test += test_endpoint_logger
+    if ARGS.test:
+        app.config['TESTING'] = True
+        app.config['MONGO_HOST'] = 'localhost'
+    else:
+        add_rabbit_handler()
+
 
 if __name__ == '__main__':
+    create_app()
     app.run(host='0.0.0.0', port=5000)
