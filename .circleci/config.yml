@@ -10,11 +10,16 @@ jobs:
       - attach_workspace:
           at: ~/ingestion-api-test
       - run:
-          name: Pipenv Install
-          command: pip3 install pipenv --user
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip3 install pipenv
       - run:
           name: Install Pipenv Reqs
-          command: pipenv install --system
+          command: |
+            . venv/bin/activate
+            pipenv install --system
       - persist_to_workspace:
           root: .
   
