@@ -21,7 +21,8 @@ jobs:
             . venv/bin/activate
             pipenv install --system
       - persist_to_workspace:
-          root: ~/ingestion-api-test
+          root: .
+          paths: venv
   
   test:
     docker:
@@ -34,7 +35,9 @@ jobs:
           at: ~/ingestion-api-test
       - run:
           name: Run tests
-          command: nose2
+          command: |
+            . venv/bin/activate
+            nose2
 
 workflows:
   version: 2
