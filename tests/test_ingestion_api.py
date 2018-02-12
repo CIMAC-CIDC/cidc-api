@@ -23,6 +23,8 @@ class TestIngestionApi(TestMinimal):
         self.test_client = app.test_client()
         self.app.config['TESTING'] = True
         self.app.config['MONGO_HOST'] = 'localhost'
+        self.app.config['MONGO_USERNAME'] = ""
+        self.app.config['MONGO_PASSWORD'] = ""
 
     def test_post(self):
         """[summary]
