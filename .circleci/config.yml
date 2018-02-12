@@ -11,7 +11,7 @@ jobs:
           at: ~/ingestion-api-test
       - run:
           name: Pipenv Install
-          command: pip3 install pipenv
+          command: pip3 install pipenv --user
       - run:
           name: Install Pipenv Reqs
           command: pipenv install --system
