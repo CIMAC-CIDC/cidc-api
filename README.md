@@ -9,3 +9,5 @@ At the root of the directory there is a bash script called "dockerbuild.sh", sim
 ```bash dockerbuild.sh```
 
 to build the image. 
+
+[[https://circleci.com/gh/dfci/cidc-ingestion-api.svg?style=shield&circle-token=f1cc21bf7abc3bddd43d1ed02bc2d24849d18f0f|alt=circleci]]
