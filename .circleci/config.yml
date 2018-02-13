@@ -48,12 +48,12 @@ jobs:
       - run:
           name: "Build docker file"
           command: |
-            docker build -t undivideddocker/ingestion-api:latest .
+            docker build -t cidc/cidc-pipeline/ingestion-api:latest .
       - deploy:
           name: "Deploy to docker hub"
           command: |
             docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD
-            docker push undivideddocker/ingestion-api
+            docker push cidc/cidc-pipeline/ingestion-api
 
 workflows:
   version: 2
