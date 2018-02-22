@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker build -t "python-eve" .
+docker build -t "ingestion-api" .

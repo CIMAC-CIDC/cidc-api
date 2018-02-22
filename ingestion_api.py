@@ -6,11 +6,13 @@ Users upload files to the google bucket, and then run cromwell jobs on them
 """
 
 import os
-import uuid
 import asyncio
 import json
 import logging
 import argparse
+import datetime
+from bson import json_util
+from uuid import uuid4
 from kombu import Connection, Exchange, Producer
 from eve import Eve
 from eve.auth import TokenAuth
@@ -46,6 +48,62 @@ class TokenAuth(TokenAuth):
         return accounts.find_one({'token': token})
 
 
+def start_celery_task(task, arguments, id):
+    """
+    Generic function to start a task through celery
+    
+    Arguments:
+        task {[type]} -- [description]
+        arguments {[type]} -- [description]
+        id {[type]} -- [description]
+    """
+    task_exchange = Exchange('', type='direct')
+    connection = Connection('amqp://rabbitmq')
+    channel = connection.channel()
+    # Generate Producer
+    producer = Producer(
+        exchange=task_exchange,
+        channel=channel,
+        routing_key='celery',
+        serializer='json'
+    )
+    # Construct data
+    payload = {
+        "id": id,
+        "task": task,
+        "args": arguments,
+        "kwargs": {},
+        "retries": 0
+    }
+    # Send data
+    producer.publish(
+        json.dumps(payload, default=json_util.default),
+        content_type='application/json',
+        content_encoding='utf-8'
+    )
+    connection.release()
+
+
+def get_trials(username):
+    """
+    Takes a username, and returns a list of trials they are part of
+
+    Arguments:
+        username {string} -- Name of the user
+
+    Returns:
+        dict -- Mongo return object
+    """
+    trials = app.data.driver.db['trials']
+    return trials.find(
+        {'$or': [
+            {'principal_investigator': username},
+            {'collaborators': username}
+        ]},
+        {'_id': 1, 'name': 1, 'assays': 1}
+    )
+
+
 def log_file_patched(items):
     """
     Logs when the job has been updated with google URIs
@@ -60,6 +118,21 @@ def log_file_patched(items):
 def add_rabbit_handler():
     RABBIT = RabbitMQHandler('amqp://rabbitmq')
     LOGGER.addHandler(RABBIT)
+
+
+def process_data_upload(item, original):
+    # The first task is to tell Celery to move the files.
+    google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
+    start_celery_task(
+        "framework.tasks.cromwell_tasks.move_files_from_staging",
+        [original, google_path],
+        uuid4().int
+    )
+
+
+def alert_data_upload_done(items):
+    for item in items:
+        print(item)
 
 
 def alert_celery_kombu(item, original):
@@ -99,52 +172,16 @@ def alert_celery_kombu(item, original):
         LOGGER.debug("Item upload complete, mongo patch complete")
 
 
-async def alert_celery_native(item, original):
-    """Uses celery's native send task to get a response object. Async, waits for the
-    status to change on ready(), then prints the result
-    Arguments:
-        item {dict} -- Updated mongo object representing completed upload
-        original {dict} -- Original mongo object before update
-    """
-    celery = Celery()
-    celery.conf.update(
-        task_serializer='json',
-        accept_content=['json'],
-        result_serializer='json',
-        broker_url='amqp://localhost',
-        result_backend='rpc://'
-    )
-    response = celery.send_task("tasks.hello_world", ["hello, world1"])
-    while not response.ready():
-        print('waiting')
-        await asyncio.sleep(0.5)
-    print('done: ' + response.get())
-
-
-def celery_event_loop(item, original):
-    """Schedules asynchronous celery tasks to demonstrate that
-    waiting for the job to return is non-blocking.
-
-    Arguments:
-        item {[type]} -- [description]
-        original {[type]} -- [description]
-    """
-    loop = asyncio.get_event_loop()
-    task1 = asyncio.ensure_future(alert_celery_native(item, original))
-    task2 = asyncio.ensure_future(do_something())
-    wait_tasks = asyncio.wait([task1, task2])
-    loop.run_until_complete(wait_tasks)
-
-
-def log_file_upload(items):
+def register_upload_job(items):
     """
     Logs when file upload begins
 
     Arguments:
         item {[dict]} -- [description]
     """
-    for item in items:
-        LOGGER.debug('Record insertion for job begun')
+    print('triggered register upload job')
+    for record in items:
+        record['start_time'] = datetime.datetime.now().isoformat(),
 
 
 def log_upload_complete(items):
@@ -155,22 +192,12 @@ def log_upload_complete(items):
     """
     for item in items:
         log_string = 'Record creation completed for: '
-        LOGGER.debug(log_string)
 
-
-def test_endpoint_logger(items):
-    """
-    Simple endpoint to test features without running a pipeline
-
-    Arguments:
-        items {[type]} -- [description]
-    """
-    print('method called!!!!')
-    for item in items:
-        LOGGER.info('test endpoint called')
-
-
-app = Eve('ingestion_api', auth=TokenAuth, settings='settings.py')
+app = Eve(
+    'ingestion_api',
+    auth=TokenAuth,
+    settings='settings.py'
+)
 
 
 @app.after_request
@@ -192,10 +219,11 @@ def after_request(response):
 
 
 def create_app():
-    app.on_updated_jobs += alert_celery_kombu
-    app.on_insert_jobs += log_file_upload
-    app.on_inserted_jobs += log_upload_complete
-    app.post_GET_test += test_endpoint_logger
+    app.on_updated_ingestion += process_data_upload
+    app.on_insert_ingestion += register_upload_job
+    app.on_inserted_ingestion += log_upload_complete
+    app.on_inserted_data += alert_data_upload_done
+
     if ARGS.test:
         app.config['TESTING'] = True
         app.config['MONGO_HOST'] = 'localhost'

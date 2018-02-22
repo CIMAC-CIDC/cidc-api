@@ -19,8 +19,7 @@ RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
 ACCOUNTS = {
-    'public_methods': ['POST'],
-    'resource_methods': ['GET', 'POST'],
+    'resource_methods': ['GET'],
     # Disable endpoint caching so clients don't cache account data
     'cache_control': '',
     'cache_expires': 0,
@@ -33,16 +32,84 @@ ACCOUNTS = {
     },
 }
 
-# Schema that keeps track of jobs that users have started, as well as their ultimate status and
-# fate
-JOBS = {
-    'allowed_roles': ['user', 'superuser', 'admin'],
+DATA = {
+    'public_methods': [],
+    'resource_methods': ['GET', 'POST'],
+    'allowed_roles': ['admin', 'user'],
     'schema': {
-        'experiment_name': {
+        'file_name': {
+            'type': 'string',
+            'required': True,
+        },
+        'sample_id': {
+            'type': 'string',
+            'required': True,
+        },
+        'trial': {
+            'type': 'string',
+            'required': True,
+        },
+        'gs_uri': {
+            'type': 'string',
+            'required': True,
+        },
+        'assay': {
+            'type': 'string',
+            'required': True,
+        },
+        'date_created': {
+            'type': 'string',
+            'required': True,
+        },
+    }
+}
+
+TRIALS = {
+    'public_methods': [],
+    'resource_methods': ['GET', 'POST'],
+    'allowed_roles': ['user', 'admin', 'superuser'],
+    'schema': {
+        'trial_name': {
             'type': 'string',
             'required': True,
             'unique': True,
         },
+        'principal_investigator': {
+            'type': 'string',
+            'required': True,
+        },
+        'collaborators': {
+            'type': 'list',
+            'schema': {
+                'type': 'string'
+            },
+        },
+        'start_date': {
+            'type': 'string',
+            'required': True,
+        },
+        'assays': {
+            'type': 'list',
+            'schema': {
+                'type': 'string'
+            },
+        },
+        'samples': {
+            'type': 'list',
+            'schema': {
+                'type': 'string',
+            }
+        },
+    },
+}
+
+# Schema that keeps track of jobs that users have started, as well as their ultimate status and
+# fate
+INGESTION = {
+    'public_methods': [],
+    'resource_methods': ['GET', 'POST'],
+    'allowed_roles': ['user', 'superuser', 'admin'],
+    'schema': {
         'number_of_files': {
             'type': 'integer',
             'required': True,
@@ -64,8 +131,7 @@ JOBS = {
             }
         },
         'start_time': {
-            'type': 'string',
-            'required': True,
+            'type': 'string'
         },
         'end_time': {
             'type': 'string',
@@ -75,11 +141,21 @@ JOBS = {
             'schema': {
                 'type': 'dict',
                 'schema': {
-                    'filename': {
-                        'type': 'string'
+                    'assay': {
+                        'type': 'string',
+                        'required': True
                     },
-                    'google_uri': {
-                        'type': 'string'
+                    'trial': {
+                        'type': 'string',
+                        'required': True
+                    },
+                    'file_name': {
+                        'type': 'string',
+                        'required': True
+                    },
+                    'sample_id': {
+                        'type': 'string',
+                        'required': True
                     },
                 },
             },
@@ -87,18 +163,9 @@ JOBS = {
     },
 }
 
-TEST = {
-    'schema': {
-        'message': {
-            'type': 'string',
-            'required': False
-        }
-    },
-    'authentication': None
-}
-
 DOMAIN = {
     'accounts': ACCOUNTS,
-    'jobs': JOBS,
-    'test': TEST
+    'ingestion': INGESTION,
+    'data': DATA,
+    'trials': TRIALS
 }
