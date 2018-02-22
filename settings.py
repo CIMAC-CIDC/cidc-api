@@ -163,9 +163,21 @@ INGESTION = {
     },
 }
 
+
+TEST = {
+    'schema': {
+        'message': {
+            'type': 'string',
+            'required': False
+        }
+    },
+    'authentication': None
+}
+
 DOMAIN = {
     'accounts': ACCOUNTS,
     'ingestion': INGESTION,
     'data': DATA,
-    'trials': TRIALS
+    'trials': TRIALS,
+    'test': TEST
 }
