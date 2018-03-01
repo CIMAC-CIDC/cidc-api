@@ -46,7 +46,7 @@ DATA = {
             'required': True,
         },
         'trial': {
-            'type': 'string',
+            'type': 'objectid',
             'required': True,
         },
         'gs_uri': {
@@ -54,7 +54,7 @@ DATA = {
             'required': True,
         },
         'assay': {
-            'type': 'string',
+            'type': 'objectid',
             'required': True,
         },
         'date_created': {
@@ -62,6 +62,139 @@ DATA = {
             'required': True,
         },
     }
+}
+
+DATA_AGG = {
+    'datasource': {
+        'source': 'data',
+        'aggregation': {
+            'pipeline': [
+                {'$match': {'trial': '$trial', 'assay': '$assay'}},
+                {
+                    '$group': {
+                        '_id': '$sample_id',
+                        'records': {
+                            '$push': {
+                                'file_name': '$file_name',
+                                'gs_uri': '$gs_uri'
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
+
+ANALYSIS = {
+    'public_methods': [],
+    'resource_methods': ['GET', 'POST'],
+    'allowed_roles': ['admin', 'superuser', 'user'],
+    'schema': {
+        'started_by': {
+            'type': 'string',
+            'required': True
+        },
+        'trial': {
+            'type': 'string',
+            'required': True
+        },
+        'assay': {
+            'type': 'string',
+            'required': True
+        },
+        'status': {
+            'type': 'dict',
+            'schema': {
+                'progress': {
+                    'type': 'string',
+                    'allowed': ['In Progress', 'Completed', 'Aborted']
+                },
+                'message': {
+                    'type': 'string'
+                }
+            }
+        },
+        'samples': {
+            'type': 'list',
+            'schema': {
+                'type': 'string'
+            }
+        },
+        'files_generated': {
+            'type': 'list',
+            'schema': {
+                'type': 'dict',
+                'schema': {
+                    'file_name': {
+                        'type': 'string',
+                        'required': True
+                    },
+                    'gs_uri': {
+                        'type': 'string',
+                        'required': True
+                    }
+                }
+            }
+        }
+    }
+}
+
+ASSAYS = {
+    'public_methods': [],
+    'resource_methods': ['GET'],
+    'allowed_roles': ['admin', 'superuser', 'user'],
+    'schema': {
+        '_id': {
+            'type': 'objectid',
+            'required': True,
+            'unique': True
+        },
+        'wdl_location': {
+            'type': 'string'
+        },
+        'assay_name': {
+            'type': 'string',
+            'required': True
+        },
+        'static_inputs': {
+            'type': 'list',
+            'schema': {
+                'type': 'dict',
+                'schema': {
+                    'key_name': {
+                        'type': 'string',
+                    },
+                    'key_value': {
+                        'type': 'unknown',
+                    },
+                },
+            },
+        },
+        'workflow': {
+            'type': 'list',
+            'schema': {
+                'type': 'dict',
+                'schema': {
+                    'step_name': {
+                        'type': 'string',
+                    },
+                    'inputs': {
+                        'type': 'list',
+                        'schema': {
+                            'type': 'string'
+                        },
+                    },
+                    'outputs': {
+                        'type': 'list',
+                        'schema': {
+                            'type': 'string'
+                        },
+                    },
+                },
+            },
+        },
+    },
 }
 
 TRIALS = {
@@ -91,7 +224,17 @@ TRIALS = {
         'assays': {
             'type': 'list',
             'schema': {
-                'type': 'string'
+                'type': 'dict',
+                'schema': {
+                    'assay_name': {
+                        'type': 'string',
+                        'required': True
+                    },
+                    'assay_id': {
+                        'type': 'string',
+                        'required': True
+                    }
+                }
             },
         },
         'samples': {
@@ -142,11 +285,11 @@ INGESTION = {
                 'type': 'dict',
                 'schema': {
                     'assay': {
-                        'type': 'string',
+                        'type': 'objectid',
                         'required': True
                     },
                     'trial': {
-                        'type': 'string',
+                        'type': 'objectid',
                         'required': True
                     },
                     'file_name': {
@@ -163,7 +306,6 @@ INGESTION = {
     },
 }
 
-
 TEST = {
     'schema': {
         'message': {
@@ -179,5 +321,8 @@ DOMAIN = {
     'ingestion': INGESTION,
     'data': DATA,
     'trials': TRIALS,
-    'test': TEST
+    'test': TEST,
+    'assays': ASSAYS,
+    'analysis': ANALYSIS,
+    'data/query': DATA_AGG
 }

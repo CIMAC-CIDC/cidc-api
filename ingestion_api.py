@@ -11,7 +11,8 @@ import json
 import logging
 import argparse
 import datetime
-from bson import json_util
+from bson import json_util, ObjectId
+from bson.json_util import loads
 from uuid import uuid4
 from kombu import Connection, Exchange, Producer
 from eve import Eve
@@ -51,7 +52,7 @@ class TokenAuth(TokenAuth):
 def start_celery_task(task, arguments, id):
     """
     Generic function to start a task through celery
-    
+
     Arguments:
         task {[type]} -- [description]
         arguments {[type]} -- [description]
@@ -182,6 +183,9 @@ def register_upload_job(items):
     print('triggered register upload job')
     for record in items:
         record['start_time'] = datetime.datetime.now().isoformat(),
+        for data_item in record['files']:
+            data_item['assay'] = ObjectId(data_item['assay'])
+            data_item['trial'] = ObjectId(data_item['trial'])
 
 
 def log_upload_complete(items):
@@ -192,6 +196,34 @@ def log_upload_complete(items):
     """
     for item in items:
         log_string = 'Record creation completed for: '
+
+
+def run_analysis_job(items):
+    """
+    Runs the specified pipeline
+
+    Arguments:
+        items {[type]} -- [description]
+    """
+    for item in items:
+        run_id = str(item['_id'])
+        trial = str(item['trial'])
+        assay = str(item['assay'])
+        samples = item['samples']
+        start_celery_task(
+            "framework.tasks.analysis_tasks.run_bwa_pipeline",
+            [trial, assay, samples],
+            run_id
+        )
+
+
+def serialize_objectids(items):
+    print("triggered serialize")
+    print("\n\n\n\n\n\n")
+    for record in items:
+        record['assay'] = ObjectId(record['assay'])
+        record['trial'] = ObjectId(record['trial'])
+
 
 app = Eve(
     'ingestion_api',
@@ -219,10 +251,18 @@ def after_request(response):
 
 
 def create_app():
+
+    # Ingestion Hooks
     app.on_updated_ingestion += process_data_upload
     app.on_insert_ingestion += register_upload_job
     app.on_inserted_ingestion += log_upload_complete
+
+    # Data Hooks
+    app.on_insert_data += serialize_objectids
     app.on_inserted_data += alert_data_upload_done
+
+    # Analysis Hooks
+    app.on_inserted_analysis += run_analysis_job
 
     if ARGS.test:
         app.config['TESTING'] = True
