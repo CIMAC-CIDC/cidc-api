@@ -61,6 +61,9 @@ DATA = {
             'type': 'string',
             'required': True,
         },
+        'analysis_id': {
+            'type': 'objectid',
+        },
     }
 }
 
@@ -120,6 +123,9 @@ ANALYSIS = {
             'schema': {
                 'type': 'string'
             }
+        },
+        'metadata_blob': {
+            'type': 'string'
         },
         'files_generated': {
             'type': 'list',
