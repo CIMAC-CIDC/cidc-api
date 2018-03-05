@@ -67,6 +67,7 @@ DATA = {
     }
 }
 
+# Aggregation query that groups data by Sample ID
 DATA_AGG = {
     'datasource': {
         'source': 'data',
