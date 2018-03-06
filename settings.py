@@ -61,9 +61,13 @@ DATA = {
             'type': 'string',
             'required': True,
         },
+        'analysis_id': {
+            'type': 'objectid',
+        },
     }
 }
 
+# Aggregation query that groups data by Sample ID
 DATA_AGG = {
     'datasource': {
         'source': 'data',
@@ -96,11 +100,11 @@ ANALYSIS = {
             'required': True
         },
         'trial': {
-            'type': 'string',
+            'type': 'objectid',
             'required': True
         },
         'assay': {
-            'type': 'string',
+            'type': 'objectid',
             'required': True
         },
         'status': {
@@ -120,6 +124,9 @@ ANALYSIS = {
             'schema': {
                 'type': 'string'
             }
+        },
+        'metadata_blob': {
+            'type': 'string'
         },
         'files_generated': {
             'type': 'list',
