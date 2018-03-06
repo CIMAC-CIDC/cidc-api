@@ -207,19 +207,18 @@ def run_analysis_job(items):
     """
     for item in items:
         run_id = str(item['_id'])
+        _etag = str(item['_etag'])
         trial = str(item['trial'])
         assay = str(item['assay'])
         samples = item['samples']
         start_celery_task(
             "framework.tasks.analysis_tasks.run_bwa_pipeline",
-            [trial, assay, samples],
+            [trial, assay, 'lloyd', run_id, _etag, samples],
             run_id
         )
 
 
 def serialize_objectids(items):
-    print("triggered serialize")
-    print("\n\n\n\n\n\n")
     for record in items:
         record['assay'] = ObjectId(record['assay'])
         record['trial'] = ObjectId(record['trial'])
@@ -250,6 +249,14 @@ def after_request(response):
     return response
 
 
+def display_analysis_entry(items):
+    for item in items:
+        item['status'] = {
+            'progress': 'In Progress',
+            'message': ''
+        }
+
+
 def create_app():
 
     # Ingestion Hooks
@@ -262,6 +269,7 @@ def create_app():
     app.on_inserted_data += alert_data_upload_done
 
     # Analysis Hooks
+    app.on_insert_analysis += display_analysis_entry
     app.on_inserted_analysis += run_analysis_job
 
     if ARGS.test:

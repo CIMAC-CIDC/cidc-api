@@ -100,11 +100,11 @@ ANALYSIS = {
             'required': True
         },
         'trial': {
-            'type': 'string',
+            'type': 'objectid',
             'required': True
         },
         'assay': {
-            'type': 'string',
+            'type': 'objectid',
             'required': True
         },
         'status': {
