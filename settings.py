@@ -11,6 +11,7 @@ MONGO_DBNAME = 'CIDC'
 GOOGLE_URL = "gs://lloyd-test-pipeline/"
 GOOGLE_FOLDER_PATH = "Experimental-Data/"
 RABBITMQ_URI = "rabbitmq:5762"
+ALLOWED_FILTERS = []
 
 # If this line is missing API will default to GET only
 RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
@@ -208,6 +209,7 @@ TRIALS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'allowed_roles': ['user', 'admin', 'superuser'],
+    'allowed_filters': ['collaborators', 'principal_investigator'],
     'schema': {
         'trial_name': {
             'type': 'string',

@@ -11,6 +11,7 @@ import json
 import logging
 import argparse
 import datetime
+from urllib.parse import urlparse, parse_qs
 from bson import json_util, ObjectId
 from bson.json_util import loads
 from uuid import uuid4
@@ -85,7 +86,7 @@ def start_celery_task(task, arguments, id):
     connection.release()
 
 
-def get_trials(username):
+def get_trials(request, lookup):
     """
     Takes a username, and returns a list of trials they are part of
 
@@ -95,14 +96,22 @@ def get_trials(username):
     Returns:
         dict -- Mongo return object
     """
-    trials = app.data.driver.db['trials']
-    return trials.find(
-        {'$or': [
-            {'principal_investigator': username},
-            {'collaborators': username}
-        ]},
-        {'_id': 1, 'name': 1, 'assays': 1}
-    )
+    url = request.url
+    query_params = parse_qs(urlparse(url).query)
+
+    if not len(query_params) == 1:
+        request = None
+        print("Error, wrong number of params passed")
+        return
+
+    if 'username' not in query_params:
+        request = None
+        print("Username is the only valid param!")
+        return
+
+    username = query_params['username'][0]
+
+    lookup['collaborators'] = username
 
 
 def log_file_patched(items):
@@ -129,11 +138,6 @@ def process_data_upload(item, original):
         [original, google_path],
         uuid4().int
     )
-
-
-def alert_data_upload_done(items):
-    for item in items:
-        print(item)
 
 
 def alert_celery_kombu(item, original):
@@ -180,12 +184,18 @@ def register_upload_job(items):
     Arguments:
         item {[dict]} -- [description]
     """
-    print('triggered register upload job')
+    files = []
     for record in items:
         record['start_time'] = datetime.datetime.now().isoformat(),
         for data_item in record['files']:
+            files.append(data_item)
             data_item['assay'] = ObjectId(data_item['assay'])
             data_item['trial'] = ObjectId(data_item['trial'])
+
+    duplicate_filenames = find_duplicates(files)
+    if duplicate_filenames:
+        print("Error, duplicate file, upload rejected")
+        items = []
 
 
 def log_upload_complete(items):
@@ -216,6 +226,30 @@ def run_analysis_job(items):
             [trial, assay, 'lloyd', run_id, _etag, samples],
             run_id
         )
+
+
+def find_duplicates(items):
+    """
+    Searches database for any items that are duplicates of already uploaded items and
+    filters them out
+    Arguments:
+        items {[type]} -- [description]
+    """
+
+    query = {'$or': [], 'file_name': 1}
+
+    for record in items:
+        query['$or'].append({
+            'assay': ObjectId(record['assay']),
+            'trial': ObjectId(record['trial']),
+            'file_name': record['file_name']
+        })
+
+    data = app.data.driver.db['data']
+    data_results = list(data.find(query))
+    return [x['file_name'] for x in data_results]
+
+    # Return a list of any duplicate records
 
 
 def serialize_objectids(items):
@@ -266,11 +300,13 @@ def create_app():
 
     # Data Hooks
     app.on_insert_data += serialize_objectids
-    app.on_inserted_data += alert_data_upload_done
 
     # Analysis Hooks
     app.on_insert_analysis += display_analysis_entry
     app.on_inserted_analysis += run_analysis_job
+
+    # Trials Hooks
+    app.on_pre_GET_trials += get_trials
 
     if ARGS.test:
         app.config['TESTING'] = True
