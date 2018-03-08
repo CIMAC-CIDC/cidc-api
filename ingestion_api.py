@@ -6,18 +6,18 @@ Users upload files to the google bucket, and then run cromwell jobs on them
 """
 
 import os
-import asyncio
 import json
 import logging
 import argparse
 import datetime
+from urllib.parse import urlparse, parse_qs
 from bson import json_util, ObjectId
 from bson.json_util import loads
 from uuid import uuid4
 from kombu import Connection, Exchange, Producer
 from eve import Eve
 from eve.auth import TokenAuth
-from flask import current_app as app
+from flask import current_app as app, abort, jsonify
 from celery import Celery
 from rabbit_handler import RabbitMQHandler
 
@@ -85,7 +85,7 @@ def start_celery_task(task, arguments, id):
     connection.release()
 
 
-def get_trials(username):
+def get_trials(request, lookup):
     """
     Takes a username, and returns a list of trials they are part of
 
@@ -95,14 +95,22 @@ def get_trials(username):
     Returns:
         dict -- Mongo return object
     """
-    trials = app.data.driver.db['trials']
-    return trials.find(
-        {'$or': [
-            {'principal_investigator': username},
-            {'collaborators': username}
-        ]},
-        {'_id': 1, 'name': 1, 'assays': 1}
-    )
+    url = request.url
+    query_params = parse_qs(urlparse(url).query)
+
+    if not len(query_params) == 1:
+        request = None
+        print("Error, wrong number of params passed")
+        return
+
+    if 'username' not in query_params:
+        request = None
+        print("Username is the only valid param!")
+        return
+
+    username = query_params['username'][0]
+
+    lookup['collaborators'] = username
 
 
 def log_file_patched(items):
@@ -124,53 +132,11 @@ def add_rabbit_handler():
 def process_data_upload(item, original):
     # The first task is to tell Celery to move the files.
     google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
-    start_celery_task(
-        "framework.tasks.cromwell_tasks.move_files_from_staging",
-        [original, google_path],
-        uuid4().int
-    )
-
-
-def alert_data_upload_done(items):
-    for item in items:
-        print(item)
-
-
-def alert_celery_kombu(item, original):
-    """Sends the details of the uploaded job to Celery, which will in turn start Cromwell
-
-    Arguments:
-        item {dict} -- Updated mongo object represented completed job.
-        original {dict} -- Original mongo object before update.
-    """
-    if item['status']['progress'] == 'Completed':
-        # Create connection details
-        task_exchange = Exchange('', type='direct')
-        connection = Connection('amqp://rabbitmq')
-        channel = connection.channel()
-        # Generate Producer
-        producer = Producer(
-            exchange=task_exchange,
-            channel=channel,
-            routing_key='celery',
-            serializer='json'
-        )
-        # Construct data
-        payload = {
-            "id": 1234,
-            "task": "framework.tasks.cromwell_tasks.run_cromwell",
-            "args": [json.dumps(item['files'])],
-            "kwargs": {},
-            "retries": 0
-        }
-        # Send data
-        producer.publish(
-            json.dumps(payload),
-            content_type='application/json',
-            content_encoding='utf-8'
-        )
-        connection.release()
-        LOGGER.debug("Item upload complete, mongo patch complete")
+    # start_celery_task(
+    #     "framework.tasks.cromwell_tasks.move_files_from_staging",
+    #     [original, google_path],
+    #     uuid4().int
+    # )
 
 
 def register_upload_job(items):
@@ -180,22 +146,20 @@ def register_upload_job(items):
     Arguments:
         item {[dict]} -- [description]
     """
-    print('triggered register upload job')
+    files = []
     for record in items:
         record['start_time'] = datetime.datetime.now().isoformat(),
         for data_item in record['files']:
+            files.append(data_item)
             data_item['assay'] = ObjectId(data_item['assay'])
             data_item['trial'] = ObjectId(data_item['trial'])
 
+    duplicate_filenames = find_duplicates(files)
+    print(duplicate_filenames)
 
-def log_upload_complete(items):
-    """
-    Logs completed file uploads
-    Arguments:
-        items {[type]} -- [description]
-    """
-    for item in items:
-        log_string = 'Record creation completed for: '
+    if duplicate_filenames:
+        print("Error, duplicate file, upload rejected")
+        abort(500, "Upload aborted, duplicate files found")
 
 
 def run_analysis_job(items):
@@ -216,6 +180,33 @@ def run_analysis_job(items):
             [trial, assay, 'lloyd', run_id, _etag, samples],
             run_id
         )
+
+
+def find_duplicates(items):
+    """
+    Searches database for any items that are duplicates of already uploaded items and
+    filters them out
+    Arguments:
+        items {[type]} -- [description]
+    """
+
+    query = {'$or': []}
+
+    for record in items:
+        query['$or'].append({
+            'assay': ObjectId(record['assay']),
+            'trial': ObjectId(record['trial']),
+            'file_name': record['file_name']
+        })
+
+    print(query)
+
+    data = app.data.driver.db['data']
+    data_results = list(data.find(query, projection=['file_name']))
+    print(data_results)
+    return [x['file_name'] for x in data_results]
+
+    # Return a list of any duplicate records
 
 
 def serialize_objectids(items):
@@ -249,12 +240,9 @@ def after_request(response):
     return response
 
 
-def display_analysis_entry(items):
-    for item in items:
-        item['status'] = {
-            'progress': 'In Progress',
-            'message': ''
-        }
+@app.errorhandler(500)
+def custom500(error):
+    return jsonify({'message': error.description}), 500
 
 
 def create_app():
@@ -262,15 +250,15 @@ def create_app():
     # Ingestion Hooks
     app.on_updated_ingestion += process_data_upload
     app.on_insert_ingestion += register_upload_job
-    app.on_inserted_ingestion += log_upload_complete
 
     # Data Hooks
     app.on_insert_data += serialize_objectids
-    app.on_inserted_data += alert_data_upload_done
 
     # Analysis Hooks
-    app.on_insert_analysis += display_analysis_entry
     app.on_inserted_analysis += run_analysis_job
+
+    # Trials Hooks
+    app.on_pre_GET_trials += get_trials
 
     if ARGS.test:
         app.config['TESTING'] = True
