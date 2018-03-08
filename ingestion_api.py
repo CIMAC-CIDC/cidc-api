@@ -6,7 +6,6 @@ Users upload files to the google bucket, and then run cromwell jobs on them
 """
 
 import os
-import asyncio
 import json
 import logging
 import argparse
@@ -18,7 +17,7 @@ from uuid import uuid4
 from kombu import Connection, Exchange, Producer
 from eve import Eve
 from eve.auth import TokenAuth
-from flask import current_app as app
+from flask import current_app as app, abort, jsonify
 from celery import Celery
 from rabbit_handler import RabbitMQHandler
 
@@ -133,48 +132,11 @@ def add_rabbit_handler():
 def process_data_upload(item, original):
     # The first task is to tell Celery to move the files.
     google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
-    start_celery_task(
-        "framework.tasks.cromwell_tasks.move_files_from_staging",
-        [original, google_path],
-        uuid4().int
-    )
-
-
-def alert_celery_kombu(item, original):
-    """Sends the details of the uploaded job to Celery, which will in turn start Cromwell
-
-    Arguments:
-        item {dict} -- Updated mongo object represented completed job.
-        original {dict} -- Original mongo object before update.
-    """
-    if item['status']['progress'] == 'Completed':
-        # Create connection details
-        task_exchange = Exchange('', type='direct')
-        connection = Connection('amqp://rabbitmq')
-        channel = connection.channel()
-        # Generate Producer
-        producer = Producer(
-            exchange=task_exchange,
-            channel=channel,
-            routing_key='celery',
-            serializer='json'
-        )
-        # Construct data
-        payload = {
-            "id": 1234,
-            "task": "framework.tasks.cromwell_tasks.run_cromwell",
-            "args": [json.dumps(item['files'])],
-            "kwargs": {},
-            "retries": 0
-        }
-        # Send data
-        producer.publish(
-            json.dumps(payload),
-            content_type='application/json',
-            content_encoding='utf-8'
-        )
-        connection.release()
-        LOGGER.debug("Item upload complete, mongo patch complete")
+    # start_celery_task(
+    #     "framework.tasks.cromwell_tasks.move_files_from_staging",
+    #     [original, google_path],
+    #     uuid4().int
+    # )
 
 
 def register_upload_job(items):
@@ -193,19 +155,11 @@ def register_upload_job(items):
             data_item['trial'] = ObjectId(data_item['trial'])
 
     duplicate_filenames = find_duplicates(files)
+    print(duplicate_filenames)
+
     if duplicate_filenames:
         print("Error, duplicate file, upload rejected")
-        items = []
-
-
-def log_upload_complete(items):
-    """
-    Logs completed file uploads
-    Arguments:
-        items {[type]} -- [description]
-    """
-    for item in items:
-        log_string = 'Record creation completed for: '
+        abort(500, "Upload aborted, duplicate files found")
 
 
 def run_analysis_job(items):
@@ -236,7 +190,7 @@ def find_duplicates(items):
         items {[type]} -- [description]
     """
 
-    query = {'$or': [], 'file_name': 1}
+    query = {'$or': []}
 
     for record in items:
         query['$or'].append({
@@ -245,8 +199,11 @@ def find_duplicates(items):
             'file_name': record['file_name']
         })
 
+    print(query)
+
     data = app.data.driver.db['data']
-    data_results = list(data.find(query))
+    data_results = list(data.find(query, projection=['file_name']))
+    print(data_results)
     return [x['file_name'] for x in data_results]
 
     # Return a list of any duplicate records
@@ -283,12 +240,9 @@ def after_request(response):
     return response
 
 
-def display_analysis_entry(items):
-    for item in items:
-        item['status'] = {
-            'progress': 'In Progress',
-            'message': ''
-        }
+@app.errorhandler(500)
+def custom500(error):
+    return jsonify({'message': error.description}), 500
 
 
 def create_app():
@@ -296,13 +250,11 @@ def create_app():
     # Ingestion Hooks
     app.on_updated_ingestion += process_data_upload
     app.on_insert_ingestion += register_upload_job
-    app.on_inserted_ingestion += log_upload_complete
 
     # Data Hooks
     app.on_insert_data += serialize_objectids
 
     # Analysis Hooks
-    app.on_insert_analysis += display_analysis_entry
     app.on_inserted_analysis += run_analysis_job
 
     # Trials Hooks
