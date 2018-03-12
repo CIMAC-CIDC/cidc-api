@@ -100,6 +100,9 @@ ANALYSIS = {
             'type': 'string',
             'required': True
         },
+        'start_date': {
+            'type': 'string'
+        },
         'trial': {
             'type': 'objectid',
             'required': True
@@ -144,6 +147,19 @@ ANALYSIS = {
                     }
                 }
             }
+        }
+    }
+}
+
+ANALYSIS_STATUS = {
+    'public_methods': [],
+    'resource_methods': ['GET'],
+    'allowed_roles': ['admin', 'superuser', 'user'],
+    'allowed_filters': ['started_by'],
+    'datasource': {
+        'source': 'analysis',
+        'projection': {
+            'status': 1
         }
     }
 }
@@ -333,5 +349,6 @@ DOMAIN = {
     'test': TEST,
     'assays': ASSAYS,
     'analysis': ANALYSIS,
+    'status': ANALYSIS_STATUS,
     'data/query': DATA_AGG
 }
