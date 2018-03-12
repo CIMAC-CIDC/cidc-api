@@ -100,17 +100,39 @@ def get_trials(request, lookup):
 
     if not len(query_params) == 1:
         request = None
-        print("Error, wrong number of params passed")
-        return
+        abort(500, 'Error, wrong number of params passed')
 
     if 'username' not in query_params:
         request = None
-        print("Username is the only valid param!")
-        return
+        abort(500, 'Username is the only valid query param!')
 
     username = query_params['username'][0]
 
     lookup['collaborators'] = username
+
+
+def get_job_status(request, lookup):
+    """
+    Fetches all jobs started by the given user.
+
+    Arguments:
+        request {[type]} -- [description]
+        lookup {[type]} -- [description]
+    """
+    url = request.url
+    query_params = parse_qs(urlparse(url).query)
+
+    if not len(query_params) == 1:
+        request = None
+        abort(500, 'Error, wrong number of params passed')
+
+    if 'started_by' not in query_params:
+        request = None
+        abort(500, 'Name is the only valid query param!')
+
+    username = query_params['started_by'][0]
+
+    lookup['started_by'] = username
 
 
 def log_file_patched(items):
@@ -132,11 +154,11 @@ def add_rabbit_handler():
 def process_data_upload(item, original):
     # The first task is to tell Celery to move the files.
     google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
-    # start_celery_task(
-    #     "framework.tasks.cromwell_tasks.move_files_from_staging",
-    #     [original, google_path],
-    #     uuid4().int
-    # )
+    start_celery_task(
+        "framework.tasks.cromwell_tasks.move_files_from_staging",
+        [original, google_path],
+        uuid4().int
+    )
 
 
 def register_upload_job(items):
@@ -215,6 +237,14 @@ def serialize_objectids(items):
         record['trial'] = ObjectId(record['trial'])
 
 
+def register_analysis(items):
+    for analysis in items:
+        analysis['status'] = {
+            'progress': 'In Progress',
+            'message': ''
+        }
+        analysis['start_date'] = datetime.datetime.now().isoformat()
+
 app = Eve(
     'ingestion_api',
     auth=TokenAuth,
@@ -255,7 +285,9 @@ def create_app():
     app.on_insert_data += serialize_objectids
 
     # Analysis Hooks
+    app.on_insert_analysis += register_analysis
     app.on_inserted_analysis += run_analysis_job
+    app.on_pre_GET_status += get_job_status
 
     # Trials Hooks
     app.on_pre_GET_trials += get_trials
