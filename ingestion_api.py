@@ -221,20 +221,25 @@ def find_duplicates(items):
             'file_name': record['file_name']
         })
 
-    print(query)
-
     data = app.data.driver.db['data']
     data_results = list(data.find(query, projection=['file_name']))
-    print(data_results)
     return [x['file_name'] for x in data_results]
 
-    # Return a list of any duplicate records
+
+def check_for_analysis(items):
+    # When an item has been uploaded, checks if an analysis is ready to be run.
+    start_celery_task(
+        "framework.tasks.analysis_tasks.analysis_pipeline",
+        [],
+        uuid4().int
+    )
 
 
 def serialize_objectids(items):
     for record in items:
         record['assay'] = ObjectId(record['assay'])
-        record['trial'] = ObjectId(record['trial'])
+        record['trial'] = ObjectId(record['trial']),
+        record['processed'] = False
 
 
 def register_analysis(items):
@@ -275,14 +280,21 @@ def custom500(error):
     return jsonify({'message': error.description}), 500
 
 
+def show_payload(updates, original):
+    print(updates)
+    print(original)
+
+
 def create_app():
 
     # Ingestion Hooks
     app.on_updated_ingestion += process_data_upload
+    app.on_update_ingestion += show_payload
     app.on_insert_ingestion += register_upload_job
 
     # Data Hooks
     app.on_insert_data += serialize_objectids
+    app.on_inserted_data += check_for_analysis
 
     # Analysis Hooks
     app.on_insert_analysis += register_analysis

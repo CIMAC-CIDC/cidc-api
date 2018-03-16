@@ -65,6 +65,14 @@ DATA = {
         'analysis_id': {
             'type': 'objectid',
         },
+        'mapping': {
+            'type': 'string',
+            'required': True,
+        },
+        'processesed': {
+            'type': 'boolean',
+            'required': True
+        }
     }
 }
 
@@ -82,6 +90,39 @@ DATA_AGG = {
                             '$push': {
                                 'file_name': '$file_name',
                                 'gs_uri': '$gs_uri'
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
+
+DATA_AGG_INPUTS = {
+    'datasource': {
+        'source': 'data',
+        'aggregation': {
+            'pipeline': [
+                {
+                    "$match": {
+                        "mapping": {
+                            "$in": "$inputs"
+                        }
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": {
+                            "sample_id": "$sample_id",
+                            "assay": "$assay",
+                            "trial": "$trial"
+                        },
+                        "records": {
+                            "$push": {
+                                "file_name": "$file_name",
+                                "gs_uri": "$gs_uri",
+                                "mapping": "$mapping"
                             }
                         }
                     }
@@ -195,25 +236,16 @@ ASSAYS = {
                 },
             },
         },
-        'workflow': {
+        "non_static_inputs": {
             'type': 'list',
             'schema': {
                 'type': 'dict',
                 'schema': {
-                    'step_name': {
+                    'key_name': {
                         'type': 'string',
                     },
-                    'inputs': {
-                        'type': 'list',
-                        'schema': {
-                            'type': 'string'
-                        },
-                    },
-                    'outputs': {
-                        'type': 'list',
-                        'schema': {
-                            'type': 'string'
-                        },
+                    'key_value': {
+                        'type': 'unknown',
                     },
                 },
             },
@@ -258,7 +290,7 @@ TRIALS = {
                     'assay_id': {
                         'type': 'string',
                         'required': True
-                    }
+                    },
                 }
             },
         },
@@ -325,6 +357,10 @@ INGESTION = {
                         'type': 'string',
                         'required': True
                     },
+                    'mapping': {
+                        'type': 'string',
+                        'required': True
+                    }
                 },
             },
         },
@@ -350,5 +386,5 @@ DOMAIN = {
     'assays': ASSAYS,
     'analysis': ANALYSIS,
     'status': ANALYSIS_STATUS,
-    'data/query': DATA_AGG
+    'data/query': DATA_AGG_INPUTS
 }
