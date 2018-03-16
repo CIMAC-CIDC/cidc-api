@@ -70,8 +70,7 @@ DATA = {
             'required': True,
         },
         'processesed': {
-            'type': 'boolean',
-            'required': True
+            'type': 'boolean'
         }
     }
 }

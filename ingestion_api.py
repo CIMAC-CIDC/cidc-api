@@ -153,6 +153,8 @@ def add_rabbit_handler():
 
 def process_data_upload(item, original):
     # The first task is to tell Celery to move the files.
+
+    print("Process data upload fired")
     google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
     start_celery_task(
         "framework.tasks.cromwell_tasks.move_files_from_staging",
@@ -177,7 +179,6 @@ def register_upload_job(items):
             data_item['trial'] = ObjectId(data_item['trial'])
 
     duplicate_filenames = find_duplicates(files)
-    print(duplicate_filenames)
 
     if duplicate_filenames:
         print("Error, duplicate file, upload rejected")
@@ -240,6 +241,7 @@ def serialize_objectids(items):
         record['assay'] = ObjectId(record['assay'])
         record['trial'] = ObjectId(record['trial']),
         record['processed'] = False
+        print(record)
 
 
 def register_analysis(items):
@@ -280,16 +282,10 @@ def custom500(error):
     return jsonify({'message': error.description}), 500
 
 
-def show_payload(updates, original):
-    print(updates)
-    print(original)
-
-
 def create_app():
 
     # Ingestion Hooks
     app.on_updated_ingestion += process_data_upload
-    app.on_update_ingestion += show_payload
     app.on_insert_ingestion += register_upload_job
 
     # Data Hooks
