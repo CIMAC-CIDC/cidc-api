@@ -230,7 +230,7 @@ ASSAYS = {
                         'type': 'string',
                     },
                     'key_value': {
-                        'type': 'unknown',
+                        'anyof_type': ['string', 'integer'],
                     },
                 },
             },
@@ -244,7 +244,7 @@ ASSAYS = {
                         'type': 'string',
                     },
                     'key_value': {
-                        'type': 'unknown',
+                        'anyof_type': ['string', 'integer'],
                     },
                 },
             },
@@ -375,6 +375,13 @@ TEST = {
     },
     'authentication': None
 }
+
+X_DOMAINS = [
+    'http://editor.swagger.io',
+    'http://petstore.swagger.io'
+]
+
+X_HEADERS = ['Content-Type', 'If-Match']
 
 DOMAIN = {
     'accounts': ACCOUNTS,

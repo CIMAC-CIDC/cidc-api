@@ -10,22 +10,49 @@ import json
 import logging
 import argparse
 import datetime
-from urllib.parse import urlparse, parse_qs
+import requests
+from functools import wraps
+from os import environ as env
+from jose import jwt
+from urllib.parse import urlparse, parse_qs, urlencode
+from urllib.request import urlopen
 from bson import json_util, ObjectId
 from bson.json_util import loads
 from uuid import uuid4
 from kombu import Connection, Exchange, Producer
 from eve import Eve
 from eve.auth import TokenAuth
-from flask import current_app as app, abort, jsonify
+from eve_swagger import swagger, add_documentation
+from flask import (
+    current_app as app,
+    abort,
+    jsonify,
+    request,
+    _request_ctx_stack,
+    redirect,
+    render_template,
+    session,
+    url_for
+)
+from flask_cors import cross_origin
+from flask_oauthlib.client import OAuth
 from celery import Celery
 from rabbit_handler import RabbitMQHandler
+from dotenv import load_dotenv, find_dotenv
+import constants
 
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-t', '--test', help='Run application in test mode', action='store_true')
 ARGS = PARSER.parse_args()
 LOGGER = logging.getLogger('ingestion-api')
 LOGGER.setLevel(logging.DEBUG)
+
+AUTH0_DOMAIN = 'cidc-test.auth0.com'
+API_AUDIENCE = 'http://localhost:5000'
+AUTH0_AUDIENCE = API_AUDIENCE
+AUTH0_CLIENT_ID = 'w0PxQ5deugPZSnP0kWbtXyw5olaEAOMy'
+AUTH0_CLIENT_SECRET = 'Id4UiCBDe6RVj0KtlAg0jY3oZPBOsmJWjYsJkkkhij_LW4YiJ_vSSOsxZ6rv52yr'
+ALGORITHMS = ["RS256"]
 
 
 class TokenAuth(TokenAuth):
@@ -54,13 +81,14 @@ def start_celery_task(task, arguments, id):
     Generic function to start a task through celery
 
     Arguments:
-        task {[type]} -- [description]
-        arguments {[type]} -- [description]
-        id {[type]} -- [description]
+        task {string} -- Name of the task to start.
+        arguments {[object]} -- List of arguments to be supplied.
+        id {int} -- Integer ID to uniquely identify the string.
     """
     task_exchange = Exchange('', type='direct')
     connection = Connection('amqp://rabbitmq')
     channel = connection.channel()
+
     # Generate Producer
     producer = Producer(
         exchange=task_exchange,
@@ -68,6 +96,7 @@ def start_celery_task(task, arguments, id):
         routing_key='celery',
         serializer='json'
     )
+
     # Construct data
     payload = {
         "id": id,
@@ -76,12 +105,15 @@ def start_celery_task(task, arguments, id):
         "kwargs": {},
         "retries": 0
     }
+
     # Send data
     producer.publish(
         json.dumps(payload, default=json_util.default),
         content_type='application/json',
         content_encoding='utf-8'
     )
+
+    # Close Connection
     connection.release()
 
 
@@ -195,25 +227,7 @@ def run_analysis_job(items):
     for item in items:
         run_id = str(item['_id'])
         _etag = str(item['_etag'])
-        trial = str(item['trial'])
-        assay = str(item['assay'])
-        samples = item['samples']
-        start_celery_task(
-            "framework.tasks.analysis_tasks.run_bwa_pipeline",
-            [trial, assay, 'lloyd', run_id, _etag, samples],
-            run_id
-        )
-
-
-def find_duplicates(items):
-    """
-    Searches database for any items that are duplicates of already uploaded items and
-    filters them out
-    Arguments:
-        items {[type]} -- [description]
-    """
-
-    query = {'$or': []}
+ 
 
     for record in items:
         query['$or'].append({
@@ -228,7 +242,14 @@ def find_duplicates(items):
 
 
 def check_for_analysis(items):
-    # When an item has been uploaded, checks if an analysis is ready to be run.
+    """
+    Every time a new entry hits the "data" collection, the assay
+    collection is checked to see if any runs can be started.
+
+    Arguments:
+        items {[Data]} -- List of data objects.
+    """
+
     start_celery_task(
         "framework.tasks.analysis_tasks.analysis_pipeline",
         [],
@@ -237,6 +258,12 @@ def check_for_analysis(items):
 
 
 def serialize_objectids(items):
+    
+    Transforms the ID strings into ObjectID objects for propper mapping.
+
+    Arguments:
+        items {[Data]} -- List of data objects.
+    """
     for record in items:
         record['assay'] = ObjectId(record['assay'])
         record['trial'] = ObjectId(record['trial']),
@@ -245,6 +272,11 @@ def serialize_objectids(items):
 
 
 def register_analysis(items):
+    """[summary]
+    
+    Arguments:
+        items {[type]} -- [description]
+    """
     for analysis in items:
         analysis['status'] = {
             'progress': 'In Progress',
@@ -258,12 +290,155 @@ app = Eve(
     settings='settings.py'
 )
 
+app.register_blueprint(swagger)
+
+app.config['SWAGGER_INFO'] = {
+    'title': 'CIDC API',
+    'version': '0.1',
+    'description': 'CIDC Data Upload AI',
+    'termsOfService': '',
+    'contact': {
+        'name': 'L'
+    },
+    'license': {
+        'name': 'MIT'
+    },
+    'schemes': ['http', 'https']
+}
+
+add_documentation({'paths': {'/status': {'get': {'parameters': [
+    {
+        'in': 'query',
+        'name': 'foobar',
+        'required': False,
+        'description': 'special query parameter',
+        'type': 'string'
+    }]
+}}}})
+
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
+
+AUTH0_CALLBACK_URL = env.get(constants.AUTH0_CALLBACK_URL)
+AUTH0_CLIENT_ID = env.get(constants.AUTH0_CLIENT_ID)
+AUTH0_CLIENT_SECRET = env.get(constants.AUTH0_CLIENT_SECRET)
+AUTH0_DOMAIN = env.get(constants.AUTH0_DOMAIN)
+AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
+if AUTH0_AUDIENCE is '':
+    AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
+
+app.secret_key = constants.SECRET_KEY
+app.debug = True
+
+
+# Format error response and append status code.
+class AuthError(Exception):
+    def __init__(self, error, status_code):
+        self.error = error
+        self.status_code = status_code
+
+
+@app.errorhandler(AuthError)
+def handle_auth_error(ex):
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
+
+
+@app.errorhandler(Exception)
+def handle_auth_error(ex):
+    response = jsonify(message=ex.message)
+    return response
+
+oauth = OAuth(app)
+
+
+auth0 = oauth.remote_app(
+    'auth0',
+    consumer_key=AUTH0_CLIENT_ID,
+    consumer_secret=AUTH0_CLIENT_SECRET,
+    request_token_params={
+        'scope': 'openid profile',
+        'audience': AUTH0_AUDIENCE
+    },
+    base_url='https://%s' % AUTH0_DOMAIN,
+    access_token_method='POST',
+    access_token_url='/oauth/token',
+    authorize_url='/authorize',
+)
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if constants.PROFILE_KEY not in session:
+            return redirect('/login')
+        return f(*args, **kwargs)
+    return decorated
+
+
+# Controllers API
+# @app.route('/')
+# def home():
+#     return render_template('home.html')
+
+
+@app.route('/callback')
+def callback_handling():
+    resp = auth0.authorized_response()
+    if resp is None:
+        raise AuthError({'code': request.args['error'],
+                         'description': request.args['error_description']}, 401)
+
+    url = 'https://' + AUTH0_DOMAIN + '/userinfo'
+    headers = {'authorization': 'Bearer ' + resp['access_token']}
+    resp = requests.get(url, headers=headers)
+    userinfo = resp.json()
+
+    session[constants.JWT_PAYLOAD] = userinfo
+
+    session[constants.PROFILE_KEY] = {
+        'user_id': userinfo['sub'],
+        'name': userinfo['name'],
+        'picture': userinfo['picture']
+    }
+
+    return redirect('/dashboard')
+
+
+@app.route('/login')
+def login():
+    return auth0.authorize(callback=AUTH0_CALLBACK_URL)
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    params = {'returnTo': url_for('home', _external=True), 'client_id': AUTH0_CLIENT_ID}
+    return redirect(auth0.base_url + '/v2/logout?' + urlencode(params))
+
+
+@app.route('/test')
+@requires_auth
+def test():
+    return jsonify('Test')
+
+
+@app.route('/dashboard')
+@requires_auth
+def dashboard():
+    return render_template('dashboard.html',
+                           userinfo=session[constants.PROFILE_KEY],
+                           userinfo_pretty=json.dumps(session[constants.JWT_PAYLOAD], indent=4))
+
 
 @app.after_request
 def after_request(response):
     """A function to add google path details to the response header when files are uploaded
 
     Decorators:
+
         app -- Flask decorator for application
 
     Arguments:
@@ -294,7 +469,6 @@ def create_app():
 
     # Analysis Hooks
     app.on_insert_analysis += register_analysis
-    app.on_inserted_analysis += run_analysis_job
     app.on_pre_GET_status += get_job_status
 
     # Trials Hooks
