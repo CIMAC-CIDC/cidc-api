@@ -46,13 +46,19 @@ PARSER.add_argument('-t', '--test', help='Run application in test mode', action=
 ARGS = PARSER.parse_args()
 LOGGER = logging.getLogger('ingestion-api')
 LOGGER.setLevel(logging.DEBUG)
-
-AUTH0_DOMAIN = 'cidc-test.auth0.com'
-API_AUDIENCE = 'http://localhost:5000'
-AUTH0_AUDIENCE = API_AUDIENCE
-AUTH0_CLIENT_ID = 'w0PxQ5deugPZSnP0kWbtXyw5olaEAOMy'
-AUTH0_CLIENT_SECRET = 'Id4UiCBDe6RVj0KtlAg0jY3oZPBOsmJWjYsJkkkhij_LW4YiJ_vSSOsxZ6rv52yr'
 ALGORITHMS = ["RS256"]
+
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
+
+AUTH0_CALLBACK_URL = env.get(constants.AUTH0_CALLBACK_URL)
+AUTH0_CLIENT_ID = env.get(constants.AUTH0_CLIENT_ID)
+AUTH0_CLIENT_SECRET = env.get(constants.AUTH0_CLIENT_SECRET)
+AUTH0_DOMAIN = env.get(constants.AUTH0_DOMAIN)
+AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
+if AUTH0_AUDIENCE is '':
+    AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
 
 
 class TokenAuth(TokenAuth):
@@ -227,7 +233,6 @@ def run_analysis_job(items):
     for item in items:
         run_id = str(item['_id'])
         _etag = str(item['_etag'])
- 
 
     for record in items:
         query['$or'].append({
@@ -257,8 +262,8 @@ def check_for_analysis(items):
     )
 
 
-def serialize_objectids(items):
-    
+def serialize_objectids(items: dict) -> None:
+    """
     Transforms the ID strings into ObjectID objects for propper mapping.
 
     Arguments:
@@ -271,9 +276,9 @@ def serialize_objectids(items):
         print(record)
 
 
-def register_analysis(items):
+def register_analysis(items: dict) -> None:
     """[summary]
-    
+
     Arguments:
         items {[type]} -- [description]
     """
@@ -315,18 +320,6 @@ add_documentation({'paths': {'/status': {'get': {'parameters': [
         'type': 'string'
     }]
 }}}})
-
-ENV_FILE = find_dotenv()
-if ENV_FILE:
-    load_dotenv(ENV_FILE)
-
-AUTH0_CALLBACK_URL = env.get(constants.AUTH0_CALLBACK_URL)
-AUTH0_CLIENT_ID = env.get(constants.AUTH0_CLIENT_ID)
-AUTH0_CLIENT_SECRET = env.get(constants.AUTH0_CLIENT_SECRET)
-AUTH0_DOMAIN = env.get(constants.AUTH0_DOMAIN)
-AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
-if AUTH0_AUDIENCE is '':
-    AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
 
 app.secret_key = constants.SECRET_KEY
 app.debug = True
@@ -378,12 +371,6 @@ def requires_auth(f):
     return decorated
 
 
-# Controllers API
-# @app.route('/')
-# def home():
-#     return render_template('home.html')
-
-
 @app.route('/callback')
 def callback_handling():
     resp = auth0.authorized_response()
@@ -417,12 +404,6 @@ def logout():
     session.clear()
     params = {'returnTo': url_for('home', _external=True), 'client_id': AUTH0_CLIENT_ID}
     return redirect(auth0.base_url + '/v2/logout?' + urlencode(params))
-
-
-@app.route('/test')
-@requires_auth
-def test():
-    return jsonify('Test')
 
 
 @app.route('/dashboard')
