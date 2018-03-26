@@ -138,7 +138,6 @@ ANALYSIS = {
     'schema': {
         'started_by': {
             'type': 'string',
-            'required': True
         },
         'start_date': {
             'type': 'string'
@@ -315,7 +314,6 @@ INGESTION = {
         },
         'started_by': {
             'type': 'string',
-            'required': True,
         },
         'status': {
             'type': 'dict',

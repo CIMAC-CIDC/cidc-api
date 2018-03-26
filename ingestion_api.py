@@ -9,19 +9,14 @@ import os
 import json
 import logging
 import argparse
-import datetime
 import requests
 from functools import wraps
 from os import environ as env
 from jose import jwt
-from urllib.parse import urlparse, parse_qs, urlencode
+from urllib.parse import urlencode
 from urllib.request import urlopen
-from bson import json_util, ObjectId
-from bson.json_util import loads
-from uuid import uuid4
-from kombu import Connection, Exchange, Producer
 from eve import Eve
-from eve.auth import TokenAuth
+from eve.auth import TokenAuth, BasicAuth
 from eve_swagger import swagger, add_documentation
 from flask import (
     current_app as app,
@@ -35,11 +30,13 @@ from flask import (
     url_for
 )
 from flask_cors import cross_origin
+from flask_login import current_user
 from flask_oauthlib.client import OAuth
-from celery import Celery
 from rabbit_handler import RabbitMQHandler
 from dotenv import load_dotenv, find_dotenv
+
 import constants
+import hooks
 
 PARSER = argparse.ArgumentParser()
 PARSER.add_argument('-t', '--test', help='Run application in test mode', action='store_true')
@@ -59,6 +56,25 @@ AUTH0_DOMAIN = env.get(constants.AUTH0_DOMAIN)
 AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
 if AUTH0_AUDIENCE is '':
     AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
+
+
+class BearerAuth(TokenAuth):
+    """[summary]
+
+    Arguments:
+        BasicAuth {[type]} -- [description]
+    """
+    def check_auth(self, token, allowed_roles, resource, method):
+        """[summary]
+
+        Arguments:
+            token {[type]} -- [description]
+            allowed_roles {[type]} -- [description]
+            resource {[type]} -- [description]
+            method {[type]} -- [description]
+        """
+        print('hello?')
+        return token_auth(token)
 
 
 class TokenAuth(TokenAuth):
@@ -82,216 +98,14 @@ class TokenAuth(TokenAuth):
         return accounts.find_one({'token': token})
 
 
-def start_celery_task(task, arguments, id):
-    """
-    Generic function to start a task through celery
-
-    Arguments:
-        task {string} -- Name of the task to start.
-        arguments {[object]} -- List of arguments to be supplied.
-        id {int} -- Integer ID to uniquely identify the string.
-    """
-    task_exchange = Exchange('', type='direct')
-    connection = Connection('amqp://rabbitmq')
-    channel = connection.channel()
-
-    # Generate Producer
-    producer = Producer(
-        exchange=task_exchange,
-        channel=channel,
-        routing_key='celery',
-        serializer='json'
-    )
-
-    # Construct data
-    payload = {
-        "id": id,
-        "task": task,
-        "args": arguments,
-        "kwargs": {},
-        "retries": 0
-    }
-
-    # Send data
-    producer.publish(
-        json.dumps(payload, default=json_util.default),
-        content_type='application/json',
-        content_encoding='utf-8'
-    )
-
-    # Close Connection
-    connection.release()
-
-
-def get_trials(request, lookup):
-    """
-    Takes a username, and returns a list of trials they are part of
-
-    Arguments:
-        username {string} -- Name of the user
-
-    Returns:
-        dict -- Mongo return object
-    """
-    url = request.url
-    query_params = parse_qs(urlparse(url).query)
-
-    if not len(query_params) == 1:
-        request = None
-        abort(500, 'Error, wrong number of params passed')
-
-    if 'username' not in query_params:
-        request = None
-        abort(500, 'Username is the only valid query param!')
-
-    username = query_params['username'][0]
-
-    lookup['collaborators'] = username
-
-
-def get_job_status(request, lookup):
-    """
-    Fetches all jobs started by the given user.
-
-    Arguments:
-        request {[type]} -- [description]
-        lookup {[type]} -- [description]
-    """
-    url = request.url
-    query_params = parse_qs(urlparse(url).query)
-
-    if not len(query_params) == 1:
-        request = None
-        abort(500, 'Error, wrong number of params passed')
-
-    if 'started_by' not in query_params:
-        request = None
-        abort(500, 'Name is the only valid query param!')
-
-    username = query_params['started_by'][0]
-
-    lookup['started_by'] = username
-
-
-def log_file_patched(items):
-    """
-    Logs when the job has been updated with google URIs
-
-    Arguments:
-        items {[type]} -- [description]
-    """
-    for item in items:
-        LOGGER.debug("Google Upload for item completed")
-
-
-def add_rabbit_handler():
+def add_rabbit_handler() -> None:
     RABBIT = RabbitMQHandler('amqp://rabbitmq')
     LOGGER.addHandler(RABBIT)
 
 
-def process_data_upload(item, original):
-    # The first task is to tell Celery to move the files.
-
-    print("Process data upload fired")
-    google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
-    start_celery_task(
-        "framework.tasks.cromwell_tasks.move_files_from_staging",
-        [original, google_path],
-        uuid4().int
-    )
-
-
-def register_upload_job(items):
-    """
-    Logs when file upload begins
-
-    Arguments:
-        item {[dict]} -- [description]
-    """
-    files = []
-    for record in items:
-        record['start_time'] = datetime.datetime.now().isoformat(),
-        for data_item in record['files']:
-            files.append(data_item)
-            data_item['assay'] = ObjectId(data_item['assay'])
-            data_item['trial'] = ObjectId(data_item['trial'])
-
-    duplicate_filenames = find_duplicates(files)
-
-    if duplicate_filenames:
-        print("Error, duplicate file, upload rejected")
-        abort(500, "Upload aborted, duplicate files found")
-
-
-def run_analysis_job(items):
-    """
-    Runs the specified pipeline
-
-    Arguments:
-        items {[type]} -- [description]
-    """
-    for item in items:
-        run_id = str(item['_id'])
-        _etag = str(item['_etag'])
-
-    for record in items:
-        query['$or'].append({
-            'assay': ObjectId(record['assay']),
-            'trial': ObjectId(record['trial']),
-            'file_name': record['file_name']
-        })
-
-    data = app.data.driver.db['data']
-    data_results = list(data.find(query, projection=['file_name']))
-    return [x['file_name'] for x in data_results]
-
-
-def check_for_analysis(items):
-    """
-    Every time a new entry hits the "data" collection, the assay
-    collection is checked to see if any runs can be started.
-
-    Arguments:
-        items {[Data]} -- List of data objects.
-    """
-
-    start_celery_task(
-        "framework.tasks.analysis_tasks.analysis_pipeline",
-        [],
-        uuid4().int
-    )
-
-
-def serialize_objectids(items: dict) -> None:
-    """
-    Transforms the ID strings into ObjectID objects for propper mapping.
-
-    Arguments:
-        items {[Data]} -- List of data objects.
-    """
-    for record in items:
-        record['assay'] = ObjectId(record['assay'])
-        record['trial'] = ObjectId(record['trial']),
-        record['processed'] = False
-        print(record)
-
-
-def register_analysis(items: dict) -> None:
-    """[summary]
-
-    Arguments:
-        items {[type]} -- [description]
-    """
-    for analysis in items:
-        analysis['status'] = {
-            'progress': 'In Progress',
-            'message': ''
-        }
-        analysis['start_date'] = datetime.datetime.now().isoformat()
-
 app = Eve(
     'ingestion_api',
-    auth=TokenAuth,
+    auth=BearerAuth,
     settings='settings.py'
 )
 
@@ -341,8 +155,10 @@ def handle_auth_error(ex):
 
 @app.errorhandler(Exception)
 def handle_auth_error(ex):
-    response = jsonify(message=ex.message)
-    return response
+    print(ex)
+    if ex.message:
+        response = jsonify(message=ex.message)
+        return response
 
 oauth = OAuth(app)
 
@@ -362,56 +178,89 @@ auth0 = oauth.remote_app(
 )
 
 
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if constants.PROFILE_KEY not in session:
-            return redirect('/login')
-        return f(*args, **kwargs)
-    return decorated
+def token_auth(token):
+    jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
+    jwks = json.loads(jsonurl.read())
+    unverified_header = jwt.get_unverified_header(token)
+    rsa_key = {}
+    for key in jwks["keys"]:
+        if key["kid"] == unverified_header["kid"]:
+            rsa_key = {
+                "kty": key["kty"],
+                "kid": key["kid"],
+                "use": key["use"],
+                "n": key["n"],
+                "e": key["e"]
+            }
+    if rsa_key:
+        try:
+            payload = jwt.decode(
+                token,
+                rsa_key,
+                algorithms=ALGORITHMS,
+                audience=AUTH0_AUDIENCE,
+                issuer="https://"+AUTH0_DOMAIN+"/"
+            )
+        except jwt.ExpiredSignatureError:
+            raise AuthError(
+                {
+                    "code": "token_expired",
+                    "description": "token is expired"
+                },
+                401
+            )
+        except jwt.JWTClaimsError:
+            raise AuthError(
+                {
+                    "code": "invalid_claims",
+                    "description": "incorrect claims, please check the audience and issuer"
+                },
+                401
+            )
+        except Exception as err:
+            print(err)
+            raise AuthError(
+                {
+                    "code": "invalid_header",
+                    "description": "Unable to parse authentication token."
+                },
+                401
+            )
+
+        _request_ctx_stack.top.current_user = payload
+        return True
+    raise AuthError(
+        {
+            "code": "invalid_header",
+            "description": "Unable to find appropriate key"
+        },
+        401
+    )
 
 
-@app.route('/callback')
-def callback_handling():
-    resp = auth0.authorized_response()
-    if resp is None:
-        raise AuthError({'code': request.args['error'],
-                         'description': request.args['error_description']}, 401)
+# @app.route('/callback')
+# def callback_handling():
+#     resp = auth0.authorized_response()
+#     if resp is None:
+#         raise AuthError({'code': request.args['error'],
+#                          'description': request.args['error_description']}, 401)
 
-    url = 'https://' + AUTH0_DOMAIN + '/userinfo'
-    headers = {'authorization': 'Bearer ' + resp['access_token']}
-    resp = requests.get(url, headers=headers)
-    userinfo = resp.json()
+#     url = 'https://' + AUTH0_DOMAIN + '/userinfo'
+#     headers = {'authorization': 'Bearer ' + resp['access_token']}
+#     resp = requests.get(url, headers=headers)
+#     userinfo = resp.json()
 
-    session[constants.JWT_PAYLOAD] = userinfo
+#     session[constants.JWT_PAYLOAD] = userinfo
 
-    session[constants.PROFILE_KEY] = {
-        'user_id': userinfo['sub'],
-        'name': userinfo['name'],
-        'picture': userinfo['picture']
-    }
+#     session[constants.PROFILE_KEY] = {
+#         'user_id': userinfo['sub'],
+#         'name': userinfo['name'],
+#         'picture': userinfo['picture']
+#     }
 
-    return redirect('/dashboard')
+#     print(session[constants.PROFILE_KEY])
 
-
-@app.route('/login')
-def login():
-    return auth0.authorize(callback=AUTH0_CALLBACK_URL)
-
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    params = {'returnTo': url_for('home', _external=True), 'client_id': AUTH0_CLIENT_ID}
-    return redirect(auth0.base_url + '/v2/logout?' + urlencode(params))
-
-
-@app.route('/dashboard')
-@requires_auth
-def dashboard():
-    return render_template('dashboard.html',
-                           userinfo=session[constants.PROFILE_KEY],
-                           userinfo_pretty=json.dumps(session[constants.JWT_PAYLOAD], indent=4))
+#     return redirect('/dashboard')
 
 
 @app.after_request
@@ -441,19 +290,19 @@ def custom500(error):
 def create_app():
 
     # Ingestion Hooks
-    app.on_updated_ingestion += process_data_upload
-    app.on_insert_ingestion += register_upload_job
+    app.on_updated_ingestion += hooks.process_data_upload
+    app.on_insert_ingestion += hooks.register_upload_job
 
     # Data Hooks
-    app.on_insert_data += serialize_objectids
-    app.on_inserted_data += check_for_analysis
+    app.on_insert_data += hooks.serialize_objectids
+    app.on_inserted_data += hooks.check_for_analysis
 
     # Analysis Hooks
-    app.on_insert_analysis += register_analysis
-    app.on_pre_GET_status += get_job_status
+    app.on_insert_analysis += hooks.register_analysis
+    app.on_pre_GET_status += hooks.get_job_status
 
     # Trials Hooks
-    app.on_pre_GET_trials += get_trials
+    app.on_pre_GET_trials += hooks.get_trials
 
     if ARGS.test:
         app.config['TESTING'] = True
