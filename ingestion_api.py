@@ -5,36 +5,26 @@ This file defines the basic behavior of the eve application.
 Users upload files to the google bucket, and then run cromwell jobs on them
 """
 
-import os
+
 import json
 import logging
 import argparse
-import requests
-from functools import wraps
 from os import environ as env
-from jose import jwt
-from urllib.parse import urlencode
 from urllib.request import urlopen
+
+from jose import jwt
 from eve import Eve
-from eve.auth import TokenAuth, BasicAuth
+from eve.auth import TokenAuth
 from eve_swagger import swagger, add_documentation
 from flask import (
     current_app as app,
-    abort,
     jsonify,
-    request,
-    _request_ctx_stack,
-    redirect,
-    render_template,
-    session,
-    url_for
+    _request_ctx_stack
 )
-from flask_cors import cross_origin
-from flask_login import current_user
 from flask_oauthlib.client import OAuth
-from rabbit_handler import RabbitMQHandler
 from dotenv import load_dotenv, find_dotenv
 
+from rabbit_handler import RabbitMQHandler
 import constants
 import hooks
 
@@ -73,32 +63,13 @@ class BearerAuth(TokenAuth):
             resource {[type]} -- [description]
             method {[type]} -- [description]
         """
-        print('hello?')
         return token_auth(token)
 
 
-class TokenAuth(TokenAuth):
-    """
-    Function for using authorization tokens
-    """
-    def check_auth(self, token, allowed_roles, resource, method):
-        """Method that receives an authorization token, and checks if it is
-        a valid token.
-
-        Arguments:
-            token {str} -- Eve API Token.
-            allowed_roles {[str]} -- List of strings indicating the allowed
-            roles of the user.
-            resource {str} -- The resource being accessed.
-            method {str} -- The method being used.
-        Returns:
-            Object -- Returns the token object if found, None if not.
-        """
-        accounts = app.data.driver.db['accounts']
-        return accounts.find_one({'token': token})
-
-
 def add_rabbit_handler() -> None:
+    """
+    Adds a RabbitMQ hook the the logging object.
+    """
     RABBIT = RabbitMQHandler('amqp://rabbitmq')
     LOGGER.addHandler(RABBIT)
 
@@ -159,10 +130,10 @@ def handle_auth_error(ex):
     if ex.message:
         response = jsonify(message=ex.message)
         return response
+    else:
+        return jsonify(message=ex)
 
 oauth = OAuth(app)
-
-
 auth0 = oauth.remote_app(
     'auth0',
     consumer_key=AUTH0_CLIENT_ID,
@@ -179,6 +150,22 @@ auth0 = oauth.remote_app(
 
 
 def token_auth(token):
+    """
+    Checks if the supplied token is valid.
+
+    Arguments:
+        token {[type]} -- [description]
+
+    Raises:
+        AuthError -- [description]
+        AuthError -- [description]
+        AuthError -- [description]
+        AuthError -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
+    print('token_auth called')
     jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
     jwks = json.loads(jsonurl.read())
     unverified_header = jwt.get_unverified_header(token)
@@ -202,6 +189,7 @@ def token_auth(token):
                 issuer="https://"+AUTH0_DOMAIN+"/"
             )
         except jwt.ExpiredSignatureError:
+            print('Expired Signature Error')
             raise AuthError(
                 {
                     "code": "token_expired",
@@ -209,7 +197,8 @@ def token_auth(token):
                 },
                 401
             )
-        except jwt.JWTClaimsError:
+        except jwt.JWTClaimsError as claims:
+            print(claims)
             raise AuthError(
                 {
                     "code": "invalid_claims",
@@ -238,31 +227,6 @@ def token_auth(token):
     )
 
 
-# @app.route('/callback')
-# def callback_handling():
-#     resp = auth0.authorized_response()
-#     if resp is None:
-#         raise AuthError({'code': request.args['error'],
-#                          'description': request.args['error_description']}, 401)
-
-#     url = 'https://' + AUTH0_DOMAIN + '/userinfo'
-#     headers = {'authorization': 'Bearer ' + resp['access_token']}
-#     resp = requests.get(url, headers=headers)
-#     userinfo = resp.json()
-
-#     session[constants.JWT_PAYLOAD] = userinfo
-
-#     session[constants.PROFILE_KEY] = {
-#         'user_id': userinfo['sub'],
-#         'name': userinfo['name'],
-#         'picture': userinfo['picture']
-#     }
-
-#     print(session[constants.PROFILE_KEY])
-
-#     return redirect('/dashboard')
-
-
 @app.after_request
 def after_request(response):
     """A function to add google path details to the response header when files are uploaded
@@ -284,10 +248,18 @@ def after_request(response):
 
 @app.errorhandler(500)
 def custom500(error):
-    return jsonify({'message': error.description}), 500
+    if error.description:
+        print(error.description)
+        return jsonify({'message': error.description}), 500
+    else:
+        print(error)
+        return jsonify({'message': error}), 500
 
 
 def create_app():
+    """
+    Configures the eve app.
+    """
 
     # Ingestion Hooks
     app.on_updated_ingestion += hooks.process_data_upload
@@ -301,8 +273,8 @@ def create_app():
     app.on_insert_analysis += hooks.register_analysis
     app.on_pre_GET_status += hooks.get_job_status
 
-    # Trials Hooks
-    app.on_pre_GET_trials += hooks.get_trials
+    # Pre get filter hook.
+    app.on_pre_GET += hooks.filter_on_id
 
     if ARGS.test:
         app.config['TESTING'] = True

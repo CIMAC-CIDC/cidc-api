@@ -19,20 +19,6 @@ RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
 # Enable reads (GET), edits (PATCH), replacements (PUT), and delete
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
-ACCOUNTS = {
-    'resource_methods': ['GET'],
-    # Disable endpoint caching so clients don't cache account data
-    'cache_control': '',
-    'cache_expires': 0,
-    'allowed_roles': ['superuser', 'admin'],
-    'schema': {
-        'token': {
-            'type': 'string',
-            'required': True,
-        }
-    },
-}
-
 DATA = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
@@ -107,7 +93,8 @@ DATA_AGG_INPUTS = {
                     "$match": {
                         "mapping": {
                             "$in": "$inputs"
-                        }
+                        },
+                        "processed": False
                     }
                 },
                 {
@@ -136,9 +123,6 @@ ANALYSIS = {
     'resource_methods': ['GET', 'POST'],
     'allowed_roles': ['admin', 'superuser', 'user'],
     'schema': {
-        'started_by': {
-            'type': 'string',
-        },
         'start_date': {
             'type': 'string'
         },
@@ -307,6 +291,7 @@ INGESTION = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'allowed_roles': ['user', 'superuser', 'admin'],
+    'allowed_filters': ['started_by'],
     'schema': {
         'number_of_files': {
             'type': 'integer',
@@ -382,7 +367,6 @@ X_DOMAINS = [
 X_HEADERS = ['Content-Type', 'If-Match']
 
 DOMAIN = {
-    'accounts': ACCOUNTS,
     'ingestion': INGESTION,
     'data': DATA,
     'trials': TRIALS,

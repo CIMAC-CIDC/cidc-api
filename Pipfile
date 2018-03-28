@@ -19,6 +19,7 @@ python-dotenv = "*"
 six = "*"
 flask-cors = "*"
 python-jose-cryptodome = "*"
+flask-oauthlib = "*"
 
 
 [dev-packages]
