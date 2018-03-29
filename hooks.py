@@ -9,7 +9,6 @@ from typing import List
 from urllib.parse import urlparse, parse_qs
 from uuid import uuid4
 
-import requests
 from bson import json_util, ObjectId
 from flask import current_app as app, abort, _request_ctx_stack
 from kombu import Connection, Exchange, Producer
@@ -26,8 +25,11 @@ def get_current_user() -> str:
         str -- User GID
     """
     current_user = _request_ctx_stack.top.current_user
+    print('this is the current user')
+    print('=====================')
     print(current_user)
-    return current_user['sub']
+    print('=====================')
+    return current_user
 
 
 def find_duplicates(items: dict) -> List[str]:
@@ -71,7 +73,7 @@ def register_upload_job(items: List[dict]) -> None:
     files = []
     for record in items:
         record['start_time'] = datetime.datetime.now().isoformat()
-        record['started_by'] = get_current_user()
+        record['started_by'] = get_current_user()['sub']
         for data_item in record['files']:
             files.append(data_item)
             data_item['assay'] = ObjectId(data_item['assay'])
@@ -89,7 +91,7 @@ def run_analysis_job(items: List[dict]) -> None:
     Runs the specified pipeline
 
     Arguments:
-        items {[type]} -- [description]
+        items {dict} -- Analysis record.
     """
     query = {'$or': []}
 
@@ -111,7 +113,7 @@ def check_for_analysis(items: List[dict]) -> None:
     collection is checked to see if any runs can be started.
 
     Arguments:
-        items {[Data]} -- List of data objects.
+        items {[dict]} -- list of data records
     """
     start_celery_task(
         "framework.tasks.analysis_tasks.analysis_pipeline",
@@ -125,7 +127,7 @@ def serialize_objectids(items: List[dict]) -> None:
     Transforms the ID strings into ObjectID objects for propper mapping.
 
     Arguments:
-        items {[Data]} -- List of data objects.
+        items {[dict]} -- List of data records.
     """
     for record in items:
         record['assay'] = ObjectId(record['assay'])
@@ -134,7 +136,7 @@ def serialize_objectids(items: List[dict]) -> None:
         print(record)
 
 
-def register_analysis(items: dict) -> None:
+def register_analysis(items: List[dict]) -> None:
     """
     Add fields that should be created only by the server like start date to
     each analysis object that is being inserted.
@@ -148,7 +150,7 @@ def register_analysis(items: dict) -> None:
             'message': ''
         }
         analysis['start_date'] = datetime.datetime.now().isoformat()
-        analysis['started_by'] = get_current_user()
+        analysis['started_by'] = get_current_user()['sub']
 
 
 def start_celery_task(task: str, arguments: object, task_id: int) -> None:
@@ -192,37 +194,21 @@ def start_celery_task(task: str, arguments: object, task_id: int) -> None:
     connection.release()
 
 
-def process_data_upload(item: dict, original: dict):
-    """[summary]
+def process_data_upload(item: dict, original: dict) -> None:
+    """
+    Tells celery to move the files from staging to an appropriate bucket.
 
     Arguments:
-        item {dict} -- [description]
-        original {dict} -- [description]
+        item {dict} -- Records to be moved
+        original {dict} -- Patched upload record with GSURL.
     """
     # The first task is to tell Celery to move the files.
-
-    print("Process data upload fired")
     google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
     start_celery_task(
         "framework.tasks.cromwell_tasks.move_files_from_staging",
         [original, google_path],
         uuid4().int
     )
-
-
-def get_trials(request: dict, lookup: dict) -> None:
-    """
-    Takes a username, and returns a list of trials they are part of
-
-    Arguments:
-        request {dict} -- request object
-
-    Returns:
-        dict -- Mongo return object
-    """
-    current_user = _request_ctx_stack.top.current_user
-    gid = current_user['sub']
-    lookup['collaborators'] = gid
 
 
 def get_job_status(request, lookup):
@@ -273,21 +259,28 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     """
     # Get current user.
     current_user = get_current_user()
+    user_id = current_user['sub']
+
+    # If the caller is a service, not a user, no need for filters.
+    if current_user['gty'] == 'client-credentials':
+        return
 
     # Logic for adding the appropriate filter based on the endpoint.
     try:
         if resource == 'trials':
-            lookup['collaborators'] = current_user
+            lookup['collaborators'] = user_id
         elif resource == 'ingestion' or resource == 'analysis':
-            lookup['started_by'] = current_user
+            lookup['started_by'] = user_id
         else:
             accounts = app.data.driver.db['trials']
-            trials = accounts.find({'collaborators': current_user}, {'_id': 1}, {'assays': 1})
+            trials = accounts.find({'collaborators': user_id}, {'_id': 1, 'assays': 1})
             if resource == 'assays':
                 assay_ids = [assay_id for list_of_ids in trials for assay_id in list_of_ids]
                 lookup['_id'] = assay_ids
             else:
                 trial_ids = [x['_id'] for x in trials]
                 lookup['trial'] = trial_ids
-    except Exception as err:
+    except TypeError as err:
+        print('Error!')
         print(err)
+        abort(500, "There was an error processing your credentials.")
