@@ -6,7 +6,6 @@ import datetime
 import json
 import logging
 from typing import List
-from urllib.parse import urlparse, parse_qs
 from uuid import uuid4
 
 from bson import json_util, ObjectId
@@ -25,20 +24,41 @@ def get_current_user() -> str:
         str -- User GID
     """
     current_user = _request_ctx_stack.top.current_user
-    print('this is the current user')
-    print('=====================')
     print(current_user)
-    print('=====================')
     return current_user
 
 
-def find_duplicates(items: dict) -> List[str]:
+def get_job_status(request, lookup):
+    """
+    Fetches all jobs started by the given user.
+
+    Arguments:
+        request {[type]} -- [description]
+        lookup {[type]} -- [description]
+    """
+    url = request.url
+    query_params = parse_qs(urlparse(url).query)
+
+    if not len(query_params) == 1:
+        request = None
+        abort(500, 'Error, wrong number of params passed')
+
+    if 'started_by' not in query_params:
+        request = None
+        abort(500, 'Name is the only valid query param!')
+
+    username = query_params['started_by'][0]
+
+    lookup['started_by'] = username
+
+
+def find_duplicates(items: List[dict]) -> List[str]:
     """
     Searches database for any items that are duplicates of already uploaded items and
     filters them out
 
     Arguments:
-        items {[type]} -- [description]
+        items {[dict]} -- Data records
 
     Returns:
         [str] - List of duplicate filenames.
@@ -63,12 +83,13 @@ def find_duplicates(items: dict) -> List[str]:
 # Return a list of any duplicate records
 
 
+# on insert ingestion.
 def register_upload_job(items: List[dict]) -> None:
     """
     Logs when file upload begins
 
     Arguments:
-        item {[dict]} -- [description]
+        item {[dict]} -- Upload record
     """
     files = []
     for record in items:
@@ -86,27 +107,7 @@ def register_upload_job(items: List[dict]) -> None:
         abort(500, "Upload aborted, duplicate files found")
 
 
-def run_analysis_job(items: List[dict]) -> None:
-    """
-    Runs the specified pipeline
-
-    Arguments:
-        items {dict} -- Analysis record.
-    """
-    query = {'$or': []}
-
-    for record in items:
-        query['$or'].append({
-            'assay': ObjectId(record['assay']),
-            'trial': ObjectId(record['trial']),
-            'file_name': record['file_name']
-        })
-
-    data = app.data.driver.db['data']
-    data_results = list(data.find(query, projection=['file_name']))
-    return [x['file_name'] for x in data_results]
-
-
+# On inserted data.
 def check_for_analysis(items: List[dict]) -> None:
     """
     Every time a new entry hits the "data" collection, the assay
@@ -122,6 +123,7 @@ def check_for_analysis(items: List[dict]) -> None:
     )
 
 
+# On insert data.
 def serialize_objectids(items: List[dict]) -> None:
     """
     Transforms the ID strings into ObjectID objects for propper mapping.
@@ -136,6 +138,7 @@ def serialize_objectids(items: List[dict]) -> None:
         print(record)
 
 
+# On insert analysis.
 def register_analysis(items: List[dict]) -> None:
     """
     Add fields that should be created only by the server like start date to
@@ -194,6 +197,7 @@ def start_celery_task(task: str, arguments: object, task_id: int) -> None:
     connection.release()
 
 
+# On updated ingestion.
 def process_data_upload(item: dict, original: dict) -> None:
     """
     Tells celery to move the files from staging to an appropriate bucket.
@@ -209,30 +213,6 @@ def process_data_upload(item: dict, original: dict) -> None:
         [original, google_path],
         uuid4().int
     )
-
-
-def get_job_status(request, lookup):
-    """
-    Fetches all jobs started by the given user.
-
-    Arguments:
-        request {[type]} -- [description]
-        lookup {[type]} -- [description]
-    """
-    url = request.url
-    query_params = parse_qs(urlparse(url).query)
-
-    if not len(query_params) == 1:
-        request = None
-        abort(500, 'Error, wrong number of params passed')
-
-    if 'started_by' not in query_params:
-        request = None
-        abort(500, 'Name is the only valid query param!')
-
-    username = query_params['started_by'][0]
-
-    lookup['started_by'] = username
 
 
 def log_file_patched(items: List[dict]) -> None:
@@ -262,7 +242,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     user_id = current_user['sub']
 
     # If the caller is a service, not a user, no need for filters.
-    if current_user['gty'] == 'client-credentials':
+    if 'gty' in current_user and current_user['gty'] == 'client-credentials':
         return
 
     # Logic for adding the appropriate filter based on the endpoint.
@@ -280,7 +260,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
             else:
                 trial_ids = [x['_id'] for x in trials]
                 lookup['trial'] = trial_ids
+
     except TypeError as err:
-        print('Error!')
         print(err)
         abort(500, "There was an error processing your credentials.")
