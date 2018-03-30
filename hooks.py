@@ -7,7 +7,7 @@ import json
 import logging
 from typing import List
 from uuid import uuid4
-
+from urllib.parse import parse_qs, urlparse
 from bson import json_util, ObjectId
 from flask import current_app as app, abort, _request_ctx_stack
 from kombu import Connection, Exchange, Producer
@@ -94,7 +94,7 @@ def register_upload_job(items: List[dict]) -> None:
     files = []
     for record in items:
         record['start_time'] = datetime.datetime.now().isoformat()
-        record['started_by'] = get_current_user()['sub']
+        record['started_by'] = get_current_user()['email']
         for data_item in record['files']:
             files.append(data_item)
             data_item['assay'] = ObjectId(data_item['assay'])
@@ -135,7 +135,6 @@ def serialize_objectids(items: List[dict]) -> None:
         record['assay'] = ObjectId(record['assay'])
         record['trial'] = ObjectId(record['trial'])
         record['processed'] = False
-        print(record)
 
 
 # On insert analysis.
@@ -153,7 +152,7 @@ def register_analysis(items: List[dict]) -> None:
             'message': ''
         }
         analysis['start_date'] = datetime.datetime.now().isoformat()
-        analysis['started_by'] = get_current_user()['sub']
+        analysis['started_by'] = get_current_user()['email']
 
 
 def start_celery_task(task: str, arguments: object, task_id: int) -> None:
@@ -239,11 +238,12 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     """
     # Get current user.
     current_user = get_current_user()
-    user_id = current_user['sub']
 
     # If the caller is a service, not a user, no need for filters.
     if 'gty' in current_user and current_user['gty'] == 'client-credentials':
         return
+
+    user_id = current_user['email']
 
     # Logic for adding the appropriate filter based on the endpoint.
     try:
@@ -255,11 +255,16 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
             accounts = app.data.driver.db['trials']
             trials = accounts.find({'collaborators': user_id}, {'_id': 1, 'assays': 1})
             if resource == 'assays':
-                assay_ids = [assay_id for list_of_ids in trials for assay_id in list_of_ids]
-                lookup['_id'] = assay_ids
+                assay_ids = []
+                for trial in trials:
+                    assays = trial['assays']
+                    for assay in assays:
+                        assay_ids.append(str(assay['assay_id']))
+                lookup['_id'] = {'$in': assay_ids}
+
             else:
                 trial_ids = [x['_id'] for x in trials]
-                lookup['trial'] = trial_ids
+                lookup['trial'] = {'$in': trial_ids}
 
     except TypeError as err:
         print(err)

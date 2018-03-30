@@ -12,6 +12,7 @@ import argparse
 from os import environ as env
 from urllib.request import urlopen
 
+import requests
 from jose import jwt
 from eve import Eve
 from eve.auth import TokenAuth
@@ -123,23 +124,13 @@ def handle_auth_error(ex):
     response.status_code = ex.status_code
     return response
 
-
-@app.errorhandler(Exception)
-def handle_auth_error(ex):
-    print(ex)
-    if ex.message:
-        response = jsonify(message=ex.message)
-        return response
-    else:
-        return jsonify(message=ex)
-
 oauth = OAuth(app)
 auth0 = oauth.remote_app(
     'auth0',
     consumer_key=AUTH0_CLIENT_ID,
     consumer_secret=AUTH0_CLIENT_SECRET,
     request_token_params={
-        'scope': 'openid profile',
+        'scope': 'openid profile email',
         'audience': AUTH0_AUDIENCE
     },
     base_url='https://%s' % AUTH0_DOMAIN,
@@ -165,10 +156,24 @@ def token_auth(token):
     Returns:
         [type] -- [description]
     """
-    print('token_auth called')
     jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
     jwks = json.loads(jsonurl.read())
-    unverified_header = jwt.get_unverified_header(token)
+
+    if not token:
+        print('no token received')
+        return False
+
+    unverified_header = None
+    print('something')
+    try:
+        unverified_header = jwt.get_unverified_header(token)
+    except jwt.JWTError as err:
+        print(err)
+
+    if not jwks:
+        print('no jwks')
+        return False
+
     rsa_key = {}
     for key in jwks["keys"]:
         if key["kid"] == unverified_header["kid"]:
@@ -216,8 +221,32 @@ def token_auth(token):
                 401
             )
 
-        _request_ctx_stack.top.current_user = payload
-        return True
+        # Get user e-mail from userinfo endpoint.
+        if 'gty' not in payload:
+            print("gty not in")
+            res = requests.get(
+                'https://cidc-test.auth0.com/userinfo',
+                headers={"Authorization": 'Bearer {}'.format(token)}
+            )
+
+            if not res.status_code == 200:
+                print("There was an error fetching user information")
+                raise AuthError(
+                    {
+                        "code": "No_info",
+                        "description": "No userinfo found at endpoint"
+                    },
+                    401
+                )
+
+            payload['email'] = res.json()['email']
+            _request_ctx_stack.top.current_user = payload
+            return True
+        else:
+            print("taskmanager")
+            payload['email'] = "taskmanager-client"
+            _request_ctx_stack.top.current_user = payload
+            return True
     raise AuthError(
         {
             "code": "invalid_header",

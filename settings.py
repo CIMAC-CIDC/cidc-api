@@ -239,7 +239,7 @@ TRIALS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'allowed_roles': ['user', 'admin', 'superuser'],
-    'allowed_filters': ['collaborators', 'principal_investigator'],
+    'allowed_filters': ['collaborators', 'principal_investigator', '_id'],
     'schema': {
         'trial_name': {
             'type': 'string',
