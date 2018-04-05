@@ -20,6 +20,7 @@ six = "*"
 flask-cors = "*"
 python-jose-cryptodome = "*"
 flask-oauthlib = "*"
+simplejson = "*"
 
 
 [dev-packages]

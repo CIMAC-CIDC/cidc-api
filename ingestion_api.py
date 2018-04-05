@@ -18,7 +18,7 @@ from eve import Eve
 from eve.auth import TokenAuth
 from eve_swagger import swagger, add_documentation
 from flask import (
-    current_app as app,
+    current_app as APP,
     jsonify,
     _request_ctx_stack
 )
@@ -75,15 +75,15 @@ def add_rabbit_handler() -> None:
     LOGGER.addHandler(RABBIT)
 
 
-app = Eve(
+APP = Eve(
     'ingestion_api',
     auth=BearerAuth,
     settings='settings.py'
 )
 
-app.register_blueprint(swagger)
+APP.register_blueprint(swagger)
 
-app.config['SWAGGER_INFO'] = {
+APP.config['SWAGGER_INFO'] = {
     'title': 'CIDC API',
     'version': '0.1',
     'description': 'CIDC Data Upload AI',
@@ -107,25 +107,37 @@ add_documentation({'paths': {'/status': {'get': {'parameters': [
     }]
 }}}})
 
-app.secret_key = constants.SECRET_KEY
-app.debug = True
+APP.debug = True
 
 
 # Format error response and append status code.
 class AuthError(Exception):
+    """[summary]
+
+    Arguments:
+        Exception {[type]} -- [description]
+    """
     def __init__(self, error, status_code):
         self.error = error
         self.status_code = status_code
 
 
-@app.errorhandler(AuthError)
+@APP.errorhandler(AuthError)
 def handle_auth_error(ex):
+    """[summary]
+
+    Arguments:
+        ex {[type]} -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
     response = jsonify(ex.error)
     response.status_code = ex.status_code
     return response
 
-oauth = OAuth(app)
-auth0 = oauth.remote_app(
+OAUTH = OAuth(APP)
+AUTH0 = OAUTH.remote_app(
     'auth0',
     consumer_key=AUTH0_CLIENT_ID,
     consumer_secret=AUTH0_CLIENT_SECRET,
@@ -256,7 +268,7 @@ def token_auth(token):
     )
 
 
-@app.after_request
+@APP.after_request
 def after_request(response):
     """A function to add google path details to the response header when files are uploaded
 
@@ -270,13 +282,21 @@ def after_request(response):
     Returns:
         dict -- HTTP response with modified headers.
     """
-    response.headers.add('google_url', app.config['GOOGLE_URL'])
-    response.headers.add('google_folder_path', app.config['GOOGLE_FOLDER_PATH'])
+    response.headers.add('google_url', APP.config['GOOGLE_URL'])
+    response.headers.add('google_folder_path', APP.config['GOOGLE_FOLDER_PATH'])
     return response
 
 
-@app.errorhandler(500)
+@APP.errorhandler(500)
 def custom500(error):
+    """[summary]
+
+    Arguments:
+        error {[type]} -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
     if error.description:
         print(error.description)
         return jsonify({'message': error.description}), 500
@@ -289,29 +309,27 @@ def create_app():
     """
     Configures the eve app.
     """
-
     # Ingestion Hooks
-    app.on_updated_ingestion += hooks.process_data_upload
-    app.on_insert_ingestion += hooks.register_upload_job
+    APP.on_updated_ingestion += hooks.process_data_upload
+    APP.on_insert_ingestion += hooks.register_upload_job
 
     # Data Hooks
-    app.on_insert_data += hooks.serialize_objectids
-    app.on_inserted_data += hooks.check_for_analysis
+    APP.on_insert_data += hooks.serialize_objectids
+    APP.on_inserted_data += hooks.check_for_analysis
 
     # Analysis Hooks
-    app.on_insert_analysis += hooks.register_analysis
-    app.on_pre_GET_status += hooks.get_job_status
+    APP.on_insert_analysis += hooks.register_analysis
 
     # Pre get filter hook.
-    app.on_pre_GET += hooks.filter_on_id
+    APP.on_pre_GET += hooks.filter_on_id
 
     if ARGS.test:
-        app.config['TESTING'] = True
-        app.config['MONGO_HOST'] = 'localhost'
+        APP.config['TESTING'] = True
+        APP.config['MONGO_HOST'] = 'localhost'
     else:
         add_rabbit_handler()
 
 
 if __name__ == '__main__':
     create_app()
-    app.run(host='0.0.0.0', port=5000)
+    APP.run(host='0.0.0.0', port=5000)

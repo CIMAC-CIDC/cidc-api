@@ -5,6 +5,7 @@ Hooks responsible for determining the endpoint behavior of the application.
 import datetime
 import json
 import logging
+import time
 from typing import List
 from uuid import uuid4
 from urllib.parse import parse_qs, urlparse
@@ -28,30 +29,6 @@ def get_current_user() -> str:
     return current_user
 
 
-def get_job_status(request, lookup):
-    """
-    Fetches all jobs started by the given user.
-
-    Arguments:
-        request {[type]} -- [description]
-        lookup {[type]} -- [description]
-    """
-    url = request.url
-    query_params = parse_qs(urlparse(url).query)
-
-    if not len(query_params) == 1:
-        request = None
-        abort(500, 'Error, wrong number of params passed')
-
-    if 'started_by' not in query_params:
-        request = None
-        abort(500, 'Name is the only valid query param!')
-
-    username = query_params['started_by'][0]
-
-    lookup['started_by'] = username
-
-
 def find_duplicates(items: List[dict]) -> List[str]:
     """
     Searches database for any items that are duplicates of already uploaded items and
@@ -63,7 +40,6 @@ def find_duplicates(items: List[dict]) -> List[str]:
     Returns:
         [str] - List of duplicate filenames.
     """
-
     query = {'$or': []}
 
     for record in items:
@@ -73,11 +49,8 @@ def find_duplicates(items: List[dict]) -> List[str]:
             'file_name': record['file_name']
         })
 
-    print(query)
-
     data = app.data.driver.db['data']
     data_results = list(data.find(query, projection=['file_name']))
-    print(data_results)
     return [x['file_name'] for x in data_results]
 
 # Return a list of any duplicate records
@@ -86,7 +59,7 @@ def find_duplicates(items: List[dict]) -> List[str]:
 # on insert ingestion.
 def register_upload_job(items: List[dict]) -> None:
     """
-    Logs when file upload begins
+    Logs when file upload begins, aborts if duplicates found.
 
     Arguments:
         item {[dict]} -- Upload record
@@ -206,6 +179,8 @@ def process_data_upload(item: dict, original: dict) -> None:
         original {dict} -- Patched upload record with GSURL.
     """
     # The first task is to tell Celery to move the files.
+    # message = "Ingestion upload completed for " + item['_id']
+    # LOGGER.debug(message)
     google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
     start_celery_task(
         "framework.tasks.cromwell_tasks.move_files_from_staging",
@@ -221,9 +196,9 @@ def log_file_patched(items: List[dict]) -> None:
     Arguments:
         items {[dict]} -- Items affected by operation.
     """
-    for item in items:
-        message = "Google Upload for item: " + item['_id'] + " completed."
-        LOGGER.debug(message)
+    # for item in items:
+    #     message = "Google Upload for item: " + item['_id'] + " completed."
+    #     LOGGER.debug(message)
 
 
 def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
@@ -233,9 +208,10 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
 
     Arguments:
         resource {str} -- Resource endpoint being queried.
-        request {[type]} -- Request being sent to endpoint.
-        lookup {[type]} -- Filter condition.
+        request {str} -- Request being sent to endpoint.
+        lookup {dict} -- Filter condition.
     """
+    t1 = time.time()
     # Get current user.
     current_user = get_current_user()
 
@@ -243,29 +219,44 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     if 'gty' in current_user and current_user['gty'] == 'client-credentials':
         return
 
+    # Check if the response is an ID query or a general endpoint get.
+    terminus = None
+    if not request.url.rsplit('/', 1)[-1] == resource:
+        terminus = request.url.rsplit('/', 1)[-1]
+
     user_id = current_user['email']
 
     # Logic for adding the appropriate filter based on the endpoint.
     try:
         if resource == 'trials':
             lookup['collaborators'] = user_id
-        elif resource == 'ingestion' or resource == 'analysis':
+        elif resource == 'ingestion':
             lookup['started_by'] = user_id
         else:
             accounts = app.data.driver.db['trials']
             trials = accounts.find({'collaborators': user_id}, {'_id': 1, 'assays': 1})
             if resource == 'assays':
-                assay_ids = []
-                for trial in trials:
-                    assays = trial['assays']
-                    for assay in assays:
-                        assay_ids.append(str(assay['assay_id']))
-                lookup['_id'] = {'$in': assay_ids}
+                # Get the list of assay_ids the user is cleared to know about.
+                assay_ids = [str(x['assay_id']) for trial in trials for x in trial['assays']]
 
+                # If the query is for an ID, make sure they are cleared to see it.
+
+                if not terminus:
+                    lookup['_id'] = {'$in': assay_ids}
+                elif terminus not in assay_ids:
+                    abort(500, "UNAUTHORIZED!!!!")
+                else:
+                    lookup['_id'] = terminus
             else:
-                trial_ids = [x['_id'] for x in trials]
-                lookup['trial'] = {'$in': trial_ids}
+                trial_ids = [str(x['_id']) for x in trials]
 
+                if not terminus:
+                    lookup['tria'] = {'$in': assay_ids}
+                if terminus and terminus not in trial_ids:
+                    abort(500, "UNAUTHORIZED!!!")
+                else:
+                    lookup['trial'] = terminus
+        print(time.time() - t1)
     except TypeError as err:
         print(err)
         abort(500, "There was an error processing your credentials.")
