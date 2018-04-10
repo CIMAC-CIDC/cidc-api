@@ -5,10 +5,8 @@ Hooks responsible for determining the endpoint behavior of the application.
 import datetime
 import json
 import logging
-import time
 from typing import List
 from uuid import uuid4
-from urllib.parse import parse_qs, urlparse
 from bson import json_util, ObjectId
 from flask import current_app as app, abort, _request_ctx_stack
 from kombu import Connection, Exchange, Producer
@@ -211,7 +209,6 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         request {str} -- Request being sent to endpoint.
         lookup {dict} -- Filter condition.
     """
-    t1 = time.time()
     # Get current user.
     current_user = get_current_user()
 
@@ -235,28 +232,29 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         else:
             accounts = app.data.driver.db['trials']
             trials = accounts.find({'collaborators': user_id}, {'_id': 1, 'assays': 1})
+
             if resource == 'assays':
                 # Get the list of assay_ids the user is cleared to know about.
                 assay_ids = [str(x['assay_id']) for trial in trials for x in trial['assays']]
 
                 # If the query is for an ID, make sure they are cleared to see it.
-
                 if not terminus:
                     lookup['_id'] = {'$in': assay_ids}
                 elif terminus not in assay_ids:
                     abort(500, "UNAUTHORIZED!!!!")
                 else:
                     lookup['_id'] = terminus
+
             else:
                 trial_ids = [str(x['_id']) for x in trials]
 
                 if not terminus:
-                    lookup['tria'] = {'$in': assay_ids}
+                    lookup['trial'] = {'$in': trial_ids}
                 if terminus and terminus not in trial_ids:
                     abort(500, "UNAUTHORIZED!!!")
                 else:
                     lookup['trial'] = terminus
-        print(time.time() - t1)
+
     except TypeError as err:
         print(err)
         abort(500, "There was an error processing your credentials.")

@@ -1,12 +1,9 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [packages]
-
 eve = "*"
 flask = "*"
 kombu = "*"
@@ -21,12 +18,9 @@ flask-cors = "*"
 python-jose-cryptodome = "*"
 flask-oauthlib = "*"
 simplejson = "*"
-
+cidc_utils = {git = "https://github.com/dfci/cidc-utils.git"}
 
 [dev-packages]
 
-
-
 [requires]
-
 python_version = "3.6"

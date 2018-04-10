@@ -3,6 +3,9 @@
 Settings file that lays out the database schema, as well as other constant variables.
 """
 
+from MAF_data_model import MAF
+
+
 MONGO_HOST = 'mongodb'
 MONGO_PORT = 27017
 MONGO_USERNAME = 'python-eve'
@@ -59,6 +62,12 @@ DATA = {
             'type': 'boolean'
         }
     }
+}
+
+MAF_PT = {
+    'public_methods': [],
+    'resource_methods': ['GET', 'POST'],
+    'schema': MAF
 }
 
 # Aggregation query that groups data by Sample ID
@@ -374,5 +383,6 @@ DOMAIN = {
     'assays': ASSAYS,
     'analysis': ANALYSIS,
     'status': ANALYSIS_STATUS,
-    'data/query': DATA_AGG_INPUTS
+    'data/query': DATA_AGG_INPUTS,
+    'maf': MAF_PT
 }

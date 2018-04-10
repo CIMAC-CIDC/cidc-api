@@ -50,7 +50,8 @@ if AUTH0_AUDIENCE is '':
 
 
 class BearerAuth(TokenAuth):
-    """[summary]
+    """
+    Handles bearer token authorization.
 
     Arguments:
         BasicAuth {[type]} -- [description]
@@ -59,8 +60,8 @@ class BearerAuth(TokenAuth):
         """[summary]
 
         Arguments:
-            token {[type]} -- [description]
-            allowed_roles {[type]} -- [description]
+            token {dict} -- JWT token.
+            allowed_roles {[str]} -- Array of strings of user roles.
             resource {[type]} -- [description]
             method {[type]} -- [description]
         """
@@ -71,8 +72,8 @@ def add_rabbit_handler() -> None:
     """
     Adds a RabbitMQ hook the the logging object.
     """
-    RABBIT = RabbitMQHandler('amqp://rabbitmq')
-    LOGGER.addHandler(RABBIT)
+    rabbit = RabbitMQHandler('amqp://rabbitmq')
+    LOGGER.addHandler(rabbit)
 
 
 APP = Eve(
@@ -176,7 +177,6 @@ def token_auth(token):
         return False
 
     unverified_header = None
-    print('something')
     try:
         unverified_header = jwt.get_unverified_header(token)
     except jwt.JWTError as err:
@@ -235,7 +235,6 @@ def token_auth(token):
 
         # Get user e-mail from userinfo endpoint.
         if 'gty' not in payload:
-            print("gty not in")
             res = requests.get(
                 'https://cidc-test.auth0.com/userinfo',
                 headers={"Authorization": 'Bearer {}'.format(token)}
@@ -255,7 +254,6 @@ def token_auth(token):
             _request_ctx_stack.top.current_user = payload
             return True
         else:
-            print("taskmanager")
             payload['email'] = "taskmanager-client"
             _request_ctx_stack.top.current_user = payload
             return True
@@ -300,9 +298,8 @@ def custom500(error):
     if error.description:
         print(error.description)
         return jsonify({'message': error.description}), 500
-    else:
-        print(error)
-        return jsonify({'message': error}), 500
+    print(error)
+    return jsonify({'message': error}), 500
 
 
 def create_app():
