@@ -6,13 +6,27 @@ import datetime
 import json
 import logging
 from typing import List
+from os import environ as env
 from uuid import uuid4
 from bson import json_util, ObjectId
 from flask import current_app as app, abort, _request_ctx_stack
 from kombu import Connection, Exchange, Producer
-
+from dotenv import load_dotenv, find_dotenv
 
 LOGGER = logging.getLogger('ingestion-api')
+
+RABBIT_MQ_ADDRESS = None
+
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
+    RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
+
+
+if env.get('IN_CLOUD'):
+    RABBIT_MQ_ADDRESS = (
+        'amqp' + env.get('RABBITMQ_SERVICE_HOST') + ':' + env.get('RABBITMQ_SERVICE_PORT')
+    )
 
 
 def get_current_user() -> str:

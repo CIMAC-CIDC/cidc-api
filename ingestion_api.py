@@ -35,16 +35,21 @@ ARGS = PARSER.parse_args()
 LOGGER = logging.getLogger('ingestion-api')
 LOGGER.setLevel(logging.DEBUG)
 ALGORITHMS = ["RS256"]
-
+RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
 ENV_FILE = find_dotenv()
 if ENV_FILE:
     load_dotenv(ENV_FILE)
 
-AUTH0_CALLBACK_URL = env.get(constants.AUTH0_CALLBACK_URL)
-AUTH0_CLIENT_ID = env.get(constants.AUTH0_CLIENT_ID)
-AUTH0_CLIENT_SECRET = env.get(constants.AUTH0_CLIENT_SECRET)
-AUTH0_DOMAIN = env.get(constants.AUTH0_DOMAIN)
-AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE)
+if env.get('IN_CLOUD'):
+    RABBIT_MQ_ADDRESS = (
+        'amqp' + env.get('RABBITMQ_SERVICE_HOST') + ':' + env.get('RABBITMQ_SERVICE_PORT')
+    )
+
+AUTH0_CALLBACK_URL = env.get(constants.AUTH0_CALLBACK_URL).replace("'", "")
+AUTH0_CLIENT_ID = env.get(constants.AUTH0_CLIENT_ID).replace("'", "")
+AUTH0_CLIENT_SECRET = env.get(constants.AUTH0_CLIENT_SECRET).replace("'", "")
+AUTH0_DOMAIN = env.get(constants.AUTH0_DOMAIN).replace("'", "")
+AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE).replace("'", "")
 if AUTH0_AUDIENCE is '':
     AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
 
@@ -72,7 +77,7 @@ def add_rabbit_handler() -> None:
     """
     Adds a RabbitMQ hook the the logging object.
     """
-    rabbit = RabbitMQHandler('amqp://rabbitmq')
+    rabbit = RabbitMQHandler(RABBIT_MQ_ADDRESS)
     LOGGER.addHandler(rabbit)
 
 
@@ -169,7 +174,8 @@ def token_auth(token):
     Returns:
         [type] -- [description]
     """
-    jsonurl = urlopen("https://"+AUTH0_DOMAIN+"/.well-known/jwks.json")
+    json_url = "https://" + AUTH0_DOMAIN + "/.well-known/jwks.json"
+    jsonurl = urlopen(json_url)
     jwks = json.loads(jsonurl.read())
 
     if not token:
@@ -287,7 +293,8 @@ def after_request(response):
 
 @APP.errorhandler(500)
 def custom500(error):
-    """[summary]
+    """
+    Custom error handler to send a message with a 500 error.
 
     Arguments:
         error {[type]} -- [description]
@@ -322,7 +329,7 @@ def create_app():
 
     if ARGS.test:
         APP.config['TESTING'] = True
-        APP.config['MONGO_HOST'] = 'localhost'
+        # APP.config['MONGO_HOST'] = 'localhost'
     else:
         add_rabbit_handler()
 

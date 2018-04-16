@@ -3,18 +3,30 @@
 Settings file that lays out the database schema, as well as other constant variables.
 """
 
+from os import environ as env
 from MAF_data_model import MAF
 
 
 MONGO_HOST = 'mongodb'
 MONGO_PORT = 27017
+MONGO_REPLICA_SET = None
 MONGO_USERNAME = 'python-eve'
 MONGO_PASSWORD = 'apple'
+
+if env.get('IN_CLOUD'):
+    MONGO_URI = "mongodb://mongo-0.mongo,mongo-1.mongo,mongo-2.mongo:27017/CIDC?replicaSet=rs0"
+    MONGO_OPTIONS = {
+        'connect': True,
+        'tz_aware': True,
+        'appname': 'flask_app_name',
+        'username': MONGO_USERNAME,
+        'password': MONGO_PASSWORD
+    }
+
+
 MONGO_DBNAME = 'CIDC'
 GOOGLE_URL = "gs://lloyd-test-pipeline/"
 GOOGLE_FOLDER_PATH = "Experimental-Data/"
-RABBITMQ_URI = "rabbitmq:5762"
-ALLOWED_FILTERS = []
 
 # If this line is missing API will default to GET only
 RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
