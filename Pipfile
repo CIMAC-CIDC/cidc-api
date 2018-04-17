@@ -18,7 +18,7 @@ flask-cors = "*"
 python-jose-cryptodome = "*"
 flask-oauthlib = "*"
 simplejson = "*"
-cidc_utils = {git = "https://github.com/dfci/cidc-utils.git"}
+cidc_utils = {git = "https://github.com/dfci/cidc-utils"}
 
 [dev-packages]
 

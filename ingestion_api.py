@@ -5,7 +5,6 @@ This file defines the basic behavior of the eve application.
 Users upload files to the google bucket, and then run cromwell jobs on them
 """
 
-
 import json
 import logging
 import argparse
@@ -24,8 +23,8 @@ from flask import (
 )
 from flask_oauthlib.client import OAuth
 from dotenv import load_dotenv, find_dotenv
+from cidc_utils.loghandler import RabbitMQHandler
 
-from rabbit_handler import RabbitMQHandler
 import constants
 import hooks
 
