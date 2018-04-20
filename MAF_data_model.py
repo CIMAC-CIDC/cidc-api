@@ -4,6 +4,18 @@ Validator for MAF data.
 """
 
 MAF = {
+    'trial_id': {
+        'required': True,
+        'type': 'string',
+    },
+    'assay_id': {
+        'required': True,
+        'type': 'string',
+    },
+    'record_id': {
+        'required': True,
+        'type': 'string'
+    },
     "Clinical_ID": {
         "required": True,
         "type": "object",

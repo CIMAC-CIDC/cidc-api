@@ -4,29 +4,13 @@ Hooks responsible for determining the endpoint behavior of the application.
 """
 import datetime
 import json
-import logging
+import re
 from typing import List
-from os import environ as env
 from uuid import uuid4
 from bson import json_util, ObjectId
 from flask import current_app as app, abort, _request_ctx_stack
 from kombu import Connection, Exchange, Producer
-from dotenv import load_dotenv, find_dotenv
-
-LOGGER = logging.getLogger('ingestion-api')
-
-RABBIT_MQ_ADDRESS = None
-
-ENV_FILE = find_dotenv()
-if ENV_FILE:
-    load_dotenv(ENV_FILE)
-    RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
-
-
-if env.get('IN_CLOUD'):
-    RABBIT_MQ_ADDRESS = (
-        'amqp' + env.get('RABBITMQ_SERVICE_HOST') + ':' + env.get('RABBITMQ_SERVICE_PORT')
-    )
+from constants import RABBIT_MQ_ADDRESS, LOGGER
 
 
 def get_current_user() -> str:
@@ -65,10 +49,8 @@ def find_duplicates(items: List[dict]) -> List[str]:
     data_results = list(data.find(query, projection=['file_name']))
     return [x['file_name'] for x in data_results]
 
-# Return a list of any duplicate records
 
-
-# on insert ingestion.
+# On insert ingestion.
 def register_upload_job(items: List[dict]) -> None:
     """
     Logs when file upload begins, aborts if duplicates found.
@@ -106,6 +88,15 @@ def check_for_analysis(items: List[dict]) -> None:
         [],
         uuid4().int
     )
+
+    # If any records are MAF files, send them to be processed.
+    mafs = [item for item in items if re.search(r'.maf$', item['file_name'])]
+    if mafs:
+        start_celery_task(
+            "framework.tasks.processing_tasks.parfe_maf",
+            mafs,
+            uuid4().int
+        )
 
 
 # On insert data.
@@ -150,7 +141,7 @@ def start_celery_task(task: str, arguments: object, task_id: int) -> None:
         id {int} -- Integer ID to uniquely identify the string.
     """
     task_exchange = Exchange('', type='direct')
-    connection = Connection('amqp://rabbitmq')
+    connection = Connection(RABBIT_MQ_ADDRESS)
     channel = connection.channel()
 
     # Generate Producer

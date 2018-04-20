@@ -88,7 +88,7 @@ DATA_AGG = {
         'source': 'data',
         'aggregation': {
             'pipeline': [
-                {'$match': {'trial': '$trial', 'assay': '$assay'}},
+                {'$match': {'trial': '$trial', 'assay': '$assay', 'processed': False}},
                 {
                     '$group': {
                         '_id': '$sample_id',
@@ -396,5 +396,5 @@ DOMAIN = {
     'analysis': ANALYSIS,
     'status': ANALYSIS_STATUS,
     'data/query': DATA_AGG_INPUTS,
-    'maf': MAF_PT
+    'vcf': MAF_PT
 }

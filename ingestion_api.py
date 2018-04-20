@@ -6,9 +6,6 @@ Users upload files to the google bucket, and then run cromwell jobs on them
 """
 
 import json
-import logging
-import argparse
-from os import environ as env
 from urllib.request import urlopen
 
 import requests
@@ -22,35 +19,14 @@ from flask import (
     _request_ctx_stack
 )
 from flask_oauthlib.client import OAuth
-from dotenv import load_dotenv, find_dotenv
-from cidc_utils.loghandler import RabbitMQHandler
 
-import constants
 import hooks
-
-PARSER = argparse.ArgumentParser()
-PARSER.add_argument('-t', '--test', help='Run application in test mode', action='store_true')
-ARGS = PARSER.parse_args()
-LOGGER = logging.getLogger('ingestion-api')
-LOGGER.setLevel(logging.DEBUG)
-ALGORITHMS = ["RS256"]
-RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
-ENV_FILE = find_dotenv()
-if ENV_FILE:
-    load_dotenv(ENV_FILE)
-
-if env.get('IN_CLOUD'):
-    RABBIT_MQ_ADDRESS = (
-        'amqp' + env.get('RABBITMQ_SERVICE_HOST') + ':' + env.get('RABBITMQ_SERVICE_PORT')
-    )
-
-AUTH0_CALLBACK_URL = env.get(constants.AUTH0_CALLBACK_URL).replace("'", "")
-AUTH0_CLIENT_ID = env.get(constants.AUTH0_CLIENT_ID).replace("'", "")
-AUTH0_CLIENT_SECRET = env.get(constants.AUTH0_CLIENT_SECRET).replace("'", "")
-AUTH0_DOMAIN = env.get(constants.AUTH0_DOMAIN).replace("'", "")
-AUTH0_AUDIENCE = env.get(constants.AUTH0_AUDIENCE).replace("'", "")
-if AUTH0_AUDIENCE is '':
-    AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
+from constants import (
+    AUTH0_AUDIENCE,
+    LOGGER,
+    AUTH0_CLIENT_ID,
+    AUTH0_CLIENT_SECRET, AUTH0_DOMAIN, ALGORITHMS
+)
 
 
 class BearerAuth(TokenAuth):
@@ -70,14 +46,6 @@ class BearerAuth(TokenAuth):
             method {[type]} -- [description]
         """
         return token_auth(token)
-
-
-def add_rabbit_handler() -> None:
-    """
-    Adds a RabbitMQ hook the the logging object.
-    """
-    rabbit = RabbitMQHandler(RABBIT_MQ_ADDRESS)
-    LOGGER.addHandler(rabbit)
 
 
 APP = Eve(
@@ -325,12 +293,6 @@ def create_app():
 
     # Pre get filter hook.
     APP.on_pre_GET += hooks.filter_on_id
-
-    if ARGS.test:
-        APP.config['TESTING'] = True
-        # APP.config['MONGO_HOST'] = 'localhost'
-    else:
-        add_rabbit_handler()
 
 
 if __name__ == '__main__':
