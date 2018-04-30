@@ -1,13 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.7
 """
 Settings file that lays out the database schema, as well as other constant variables.
 """
-
 from os import environ as env
 from MAF_data_model import MAF
 
-
-MONGO_HOST = 'mongodb'
+MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
 MONGO_REPLICA_SET = None
 MONGO_USERNAME = 'python-eve'
@@ -22,7 +20,6 @@ if env.get('IN_CLOUD'):
         'username': MONGO_USERNAME,
         'password': MONGO_PASSWORD
     }
-
 
 MONGO_DBNAME = 'CIDC'
 GOOGLE_URL = "gs://lloyd-test-pipeline/"
@@ -70,7 +67,7 @@ DATA = {
             'type': 'string',
             'required': True,
         },
-        'processesed': {
+        'processed': {
             'type': 'boolean'
         }
     }
@@ -129,7 +126,8 @@ DATA_AGG_INPUTS = {
                             "$push": {
                                 "file_name": "$file_name",
                                 "gs_uri": "$gs_uri",
-                                "mapping": "$mapping"
+                                "mapping": "$mapping",
+                                '_id': '$_id'
                             }
                         }
                     }
@@ -311,6 +309,7 @@ TRIALS = {
 INGESTION = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
+    'item_methods': ['GET', 'PATCH'],
     'allowed_roles': ['user', 'superuser', 'admin'],
     'allowed_filters': ['started_by'],
     'schema': {

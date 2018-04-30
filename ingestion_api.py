@@ -4,10 +4,8 @@ This file defines the basic behavior of the eve application.
 
 Users upload files to the google bucket, and then run cromwell jobs on them
 """
-
 import json
 from urllib.request import urlopen
-
 import requests
 from jose import jwt
 from eve import Eve
@@ -19,7 +17,6 @@ from flask import (
     _request_ctx_stack
 )
 from flask_oauthlib.client import OAuth
-
 import hooks
 from constants import (
     AUTH0_AUDIENCE,

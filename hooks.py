@@ -21,7 +21,6 @@ def get_current_user() -> str:
         str -- User GID
     """
     current_user = _request_ctx_stack.top.current_user
-    print(current_user)
     return current_user
 
 
@@ -93,7 +92,7 @@ def check_for_analysis(items: List[dict]) -> None:
     mafs = [item for item in items if re.search(r'.maf$', item['file_name'])]
     if mafs:
         start_celery_task(
-            "framework.tasks.processing_tasks.parfe_maf",
+            "framework.tasks.processing_tasks.parse_maf",
             mafs,
             uuid4().int
         )
@@ -184,6 +183,7 @@ def process_data_upload(item: dict, original: dict) -> None:
     # The first task is to tell Celery to move the files.
     # message = "Ingestion upload completed for " + item['_id']
     # LOGGER.debug(message)
+
     google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
     start_celery_task(
         "framework.tasks.cromwell_tasks.move_files_from_staging",
@@ -199,9 +199,9 @@ def log_file_patched(items: List[dict]) -> None:
     Arguments:
         items {[dict]} -- Items affected by operation.
     """
-    # for item in items:
-    #     message = "Google Upload for item: " + item['_id'] + " completed."
-    #     LOGGER.debug(message)
+    for item in items:
+        message = "Google Upload for item: " + str(item) + " completed."
+        LOGGER.debug(message)
 
 
 def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
@@ -221,11 +221,6 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     if 'gty' in current_user and current_user['gty'] == 'client-credentials':
         return
 
-    # Check if the response is an ID query or a general endpoint get.
-    terminus = None
-    if not request.url.rsplit('/', 1)[-1] == resource:
-        terminus = request.url.rsplit('/', 1)[-1]
-
     user_id = current_user['email']
 
     # Logic for adding the appropriate filter based on the endpoint.
@@ -237,29 +232,13 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         else:
             accounts = app.data.driver.db['trials']
             trials = accounts.find({'collaborators': user_id}, {'_id': 1, 'assays': 1})
-
             if resource == 'assays':
                 # Get the list of assay_ids the user is cleared to know about.
                 assay_ids = [str(x['assay_id']) for trial in trials for x in trial['assays']]
-
-                # If the query is for an ID, make sure they are cleared to see it.
-                if not terminus:
-                    lookup['_id'] = {'$in': assay_ids}
-                elif terminus not in assay_ids:
-                    abort(500, "UNAUTHORIZED!!!!")
-                else:
-                    lookup['_id'] = terminus
-
+                lookup['_id'] = {'$in': assay_ids}
             else:
                 trial_ids = [str(x['_id']) for x in trials]
-
-                if not terminus:
-                    lookup['trial'] = {'$in': trial_ids}
-                if terminus and terminus not in trial_ids:
-                    abort(500, "UNAUTHORIZED!!!")
-                else:
-                    lookup['trial'] = terminus
-
+                lookup['trial'] = {'$in': trial_ids}
     except TypeError as err:
         print(err)
         abort(500, "There was an error processing your credentials.")
