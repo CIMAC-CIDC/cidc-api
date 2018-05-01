@@ -4,23 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-eve = "*"
-flask = "*"
-kombu = "*"
-celery = "*"
-asyncio = "*"
-sphinx = "*"
-"nose2" = "*"
-eve-swagger = "*"
+attrs = "*"
 python-dotenv = "*"
-six = "*"
-flask-cors = "*"
-python-jose-cryptodome = "*"
-flask-oauthlib = "*"
-simplejson = "*"
-cidc_utils = {git = "https://github.com/dfci/cidc-utils"}
 
 [dev-packages]
+pylint = "*"
+"pep8" = "*"
 
 [requires]
 python_version = "3.6"

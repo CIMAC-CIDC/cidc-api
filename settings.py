@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 """
 Settings file that lays out the database schema, as well as other constant variables.
 """
@@ -25,11 +25,13 @@ MONGO_DBNAME = 'CIDC'
 GOOGLE_URL = "gs://lloyd-test-pipeline/"
 GOOGLE_FOLDER_PATH = "Experimental-Data/"
 
+
 # If this line is missing API will default to GET only
 RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
 
 # Enable reads (GET), edits (PATCH), replacements (PUT), and delete
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
+
 
 DATA = {
     'public_methods': [],

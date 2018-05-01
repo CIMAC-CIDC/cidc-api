@@ -3,8 +3,31 @@
 Validator for MAF data.
 """
 
-f_coercer = lambda x: None if not x else float(x)
-i_coercer = lambda x: None if not x else int(x)
+
+def float_coercer(field):
+    """
+    Coerces value to float if it exists.
+
+    Arguments:
+        field {[type]} -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
+    return None if not field else float(field)
+
+
+def int_coercer(field):
+    """[summary]
+
+    Arguments:
+        field {[type]} -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
+    return None if not field else int(field)
+
 
 MAF = {
     'trial': {
@@ -27,7 +50,7 @@ MAF = {
     "ExAC_AF_EAS": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Verification_Status": {
@@ -48,7 +71,7 @@ MAF = {
     "n_ref_count": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "DOMAINS": {
@@ -64,7 +87,7 @@ MAF = {
     "Start_Position": {
         "required": True,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "empty": False
     },
     "Variant_Classification": {
@@ -75,7 +98,7 @@ MAF = {
     "CDS_position": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "variant_id": {
@@ -96,7 +119,7 @@ MAF = {
     "AA_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "HGVSp_Short": {
@@ -107,7 +130,7 @@ MAF = {
     "MOTIF_SCORE_CHANGE": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "variant_qual": {
@@ -128,13 +151,13 @@ MAF = {
     "ExAC_AC_AN_Adj": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "gnomAD_OTH_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "PolyPhen": {
@@ -170,25 +193,25 @@ MAF = {
     "gnomAD_AMR_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "ExAC_AF_OTH": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "cDNA_position": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "n_depth": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "all_effects": {
@@ -208,7 +231,7 @@ MAF = {
     "ExAC_AF_Adj": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Hugo_Symbol": {
@@ -219,7 +242,7 @@ MAF = {
     "ASN_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "ExAC_FILTER": {
@@ -230,7 +253,7 @@ MAF = {
     "t_depth": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "Tumor_Seq_Allele2": {
@@ -246,7 +269,7 @@ MAF = {
     "SAS_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "HGVS_OFFSET": {
@@ -257,7 +280,7 @@ MAF = {
     "ExAC_AF_AFR": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Validation_Method": {
@@ -267,7 +290,7 @@ MAF = {
     "ExAC_AC_AN": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Tumor_Seq_Allele1": {
@@ -278,37 +301,37 @@ MAF = {
     "ExAC_AC_AN_SAS": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Protein_position": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "ExAC_AC_AN_EAS": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "ExAC_AC_AN_AMR": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "EA_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "gnomAD_FIN_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Sequencing_Phase": {
@@ -339,7 +362,7 @@ MAF = {
     "AMR_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "STRAND_VEP": {
@@ -350,7 +373,7 @@ MAF = {
     "ExAC_AC_AN_AFR": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Tumor_Validation_Allele1": {
@@ -366,7 +389,7 @@ MAF = {
     "MOTIF_POS": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "BIOTYPE": {
@@ -392,7 +415,7 @@ MAF = {
     "ExAC_AC_AN_NFE": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "CANONICAL": {
@@ -403,7 +426,7 @@ MAF = {
     "gnomAD_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "TSL": {
@@ -423,7 +446,7 @@ MAF = {
     "ExAC_AF_NFE": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "BAM_File": {
@@ -434,7 +457,7 @@ MAF = {
     "AFR_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Match_Norm_Seq_Allele2": {
@@ -465,19 +488,19 @@ MAF = {
     "Score": {
         "required": True,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "ExAC_AF_SAS": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "gnomAD_ASJ_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "CCDS": {
@@ -493,7 +516,7 @@ MAF = {
     "ExAC_AC_AN_OTH": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Feature_type": {
@@ -519,7 +542,7 @@ MAF = {
     "ExAC_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Validation_Status": {
@@ -539,7 +562,7 @@ MAF = {
     "End_Position": {
         "required": True,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "empty": False
     },
     "HGVSc": {
@@ -550,7 +573,7 @@ MAF = {
     "gnomAD_AFR_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Tumor_Validation_Allele2": {
@@ -571,13 +594,13 @@ MAF = {
     "t_alt_count": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "gnomAD_EAS_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Strand": {
@@ -588,13 +611,13 @@ MAF = {
     "ExAC_AF_AMR": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "ALLELE_NUM": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "Exon_Number": {
@@ -605,7 +628,7 @@ MAF = {
     "EAS_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Tumor_Sample_UUID": {
@@ -620,7 +643,7 @@ MAF = {
     "AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "PHENO": {
@@ -646,19 +669,19 @@ MAF = {
     "HIGH_INF_POS": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "gnomAD_NFE_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "EUR_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "DISTANCE": {
@@ -674,7 +697,7 @@ MAF = {
     "ExAC_AF_FIN": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "SOMATIC": {
@@ -685,13 +708,13 @@ MAF = {
     "gnomAD_SAS_AF": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "t_ref_count": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "FILTER": {
@@ -707,7 +730,7 @@ MAF = {
     "ExAC_AC_AN_FIN": {
         "required": False,
         "type": "float",
-        "coerce": f_coercer,
+        "coerce": float_coercer,
         "nullable": True
     },
     "Sequencer": {
@@ -717,7 +740,7 @@ MAF = {
     "n_alt_count": {
         "required": False,
         "type": "integer",
-        "coerce": i_coercer,
+        "coerce": int_coercer,
         "nullable": True
     },
     "Chromosome": {
