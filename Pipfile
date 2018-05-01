@@ -1,25 +1,15 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [packages]
-
-eve = "*"
-flask = "*"
-kombu = "*"
-celery = "*"
-asyncio = "*"
-sphinx = "*"
-"nose2" = "*"
-
+attrs = "*"
+python-dotenv = "*"
 
 [dev-packages]
-
-
+pylint = "*"
+"pep8" = "*"
 
 [requires]
-
 python_version = "3.6"

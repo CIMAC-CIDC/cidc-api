@@ -1,17 +1,30 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Settings file that lays out the database schema, as well as other constant variables.
 """
+from os import environ as env
+from MAF_data_model import MAF
 
-MONGO_HOST = 'mongodb'
+MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
+MONGO_REPLICA_SET = None
 MONGO_USERNAME = 'python-eve'
 MONGO_PASSWORD = 'apple'
+
+if env.get('IN_CLOUD'):
+    MONGO_URI = "mongodb://mongo-0.mongo,mongo-1.mongo,mongo-2.mongo:27017/CIDC?replicaSet=rs0"
+    MONGO_OPTIONS = {
+        'connect': True,
+        'tz_aware': True,
+        'appname': 'flask_app_name',
+        'username': MONGO_USERNAME,
+        'password': MONGO_PASSWORD
+    }
+
 MONGO_DBNAME = 'CIDC'
 GOOGLE_URL = "gs://lloyd-test-pipeline/"
 GOOGLE_FOLDER_PATH = "Experimental-Data/"
-RABBITMQ_URI = "rabbitmq:5762"
-ALLOWED_FILTERS = []
+
 
 # If this line is missing API will default to GET only
 RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
@@ -19,19 +32,6 @@ RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
 # Enable reads (GET), edits (PATCH), replacements (PUT), and delete
 ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
 
-ACCOUNTS = {
-    'resource_methods': ['GET'],
-    # Disable endpoint caching so clients don't cache account data
-    'cache_control': '',
-    'cache_expires': 0,
-    'allowed_roles': ['superuser', 'admin'],
-    'schema': {
-        'token': {
-            'type': 'string',
-            'required': True,
-        }
-    },
-}
 
 DATA = {
     'public_methods': [],
@@ -65,7 +65,20 @@ DATA = {
         'analysis_id': {
             'type': 'objectid',
         },
+        'mapping': {
+            'type': 'string',
+            'required': True,
+        },
+        'processed': {
+            'type': 'boolean'
+        }
     }
+}
+
+MAF_PT = {
+    'public_methods': [],
+    'resource_methods': ['GET', 'POST'],
+    'schema': MAF
 }
 
 # Aggregation query that groups data by Sample ID
@@ -74,7 +87,7 @@ DATA_AGG = {
         'source': 'data',
         'aggregation': {
             'pipeline': [
-                {'$match': {'trial': '$trial', 'assay': '$assay'}},
+                {'$match': {'trial': '$trial', 'assay': '$assay', 'processed': False}},
                 {
                     '$group': {
                         '_id': '$sample_id',
@@ -91,15 +104,46 @@ DATA_AGG = {
     }
 }
 
+DATA_AGG_INPUTS = {
+    'datasource': {
+        'source': 'data',
+        'aggregation': {
+            'pipeline': [
+                {
+                    "$match": {
+                        "mapping": {
+                            "$in": "$inputs"
+                        },
+                        "processed": False
+                    }
+                },
+                {
+                    "$group": {
+                        "_id": {
+                            "sample_id": "$sample_id",
+                            "assay": "$assay",
+                            "trial": "$trial"
+                        },
+                        "records": {
+                            "$push": {
+                                "file_name": "$file_name",
+                                "gs_uri": "$gs_uri",
+                                "mapping": "$mapping",
+                                '_id': '$_id'
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}
+
 ANALYSIS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'allowed_roles': ['admin', 'superuser', 'user'],
     'schema': {
-        'started_by': {
-            'type': 'string',
-            'required': True
-        },
         'start_date': {
             'type': 'string'
         },
@@ -190,30 +234,21 @@ ASSAYS = {
                         'type': 'string',
                     },
                     'key_value': {
-                        'type': 'unknown',
+                        'anyof_type': ['string', 'integer'],
                     },
                 },
             },
         },
-        'workflow': {
+        "non_static_inputs": {
             'type': 'list',
             'schema': {
                 'type': 'dict',
                 'schema': {
-                    'step_name': {
+                    'key_name': {
                         'type': 'string',
                     },
-                    'inputs': {
-                        'type': 'list',
-                        'schema': {
-                            'type': 'string'
-                        },
-                    },
-                    'outputs': {
-                        'type': 'list',
-                        'schema': {
-                            'type': 'string'
-                        },
+                    'key_value': {
+                        'anyof_type': ['string', 'integer'],
                     },
                 },
             },
@@ -225,7 +260,7 @@ TRIALS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'allowed_roles': ['user', 'admin', 'superuser'],
-    'allowed_filters': ['collaborators', 'principal_investigator'],
+    'allowed_filters': ['collaborators', 'principal_investigator', '_id'],
     'schema': {
         'trial_name': {
             'type': 'string',
@@ -258,7 +293,7 @@ TRIALS = {
                     'assay_id': {
                         'type': 'string',
                         'required': True
-                    }
+                    },
                 }
             },
         },
@@ -276,7 +311,9 @@ TRIALS = {
 INGESTION = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
+    'item_methods': ['GET', 'PATCH'],
     'allowed_roles': ['user', 'superuser', 'admin'],
+    'allowed_filters': ['started_by'],
     'schema': {
         'number_of_files': {
             'type': 'integer',
@@ -284,7 +321,6 @@ INGESTION = {
         },
         'started_by': {
             'type': 'string',
-            'required': True,
         },
         'status': {
             'type': 'dict',
@@ -325,6 +361,10 @@ INGESTION = {
                         'type': 'string',
                         'required': True
                     },
+                    'mapping': {
+                        'type': 'string',
+                        'required': True
+                    }
                 },
             },
         },
@@ -341,8 +381,14 @@ TEST = {
     'authentication': None
 }
 
+X_DOMAINS = [
+    'http://editor.swagger.io',
+    'http://petstore.swagger.io'
+]
+
+X_HEADERS = ['Content-Type', 'If-Match']
+
 DOMAIN = {
-    'accounts': ACCOUNTS,
     'ingestion': INGESTION,
     'data': DATA,
     'trials': TRIALS,
@@ -350,5 +396,6 @@ DOMAIN = {
     'assays': ASSAYS,
     'analysis': ANALYSIS,
     'status': ANALYSIS_STATUS,
-    'data/query': DATA_AGG
+    'data/query': DATA_AGG_INPUTS,
+    'vcf': MAF_PT
 }

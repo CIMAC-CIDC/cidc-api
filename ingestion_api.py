@@ -4,259 +4,244 @@ This file defines the basic behavior of the eve application.
 
 Users upload files to the google bucket, and then run cromwell jobs on them
 """
-
-import os
 import json
-import logging
-import argparse
-import datetime
-from urllib.parse import urlparse, parse_qs
-from bson import json_util, ObjectId
-from bson.json_util import loads
-from uuid import uuid4
-from kombu import Connection, Exchange, Producer
+from urllib.request import urlopen
+import requests
+from jose import jwt
 from eve import Eve
 from eve.auth import TokenAuth
-from flask import current_app as app, abort, jsonify
-from celery import Celery
-from rabbit_handler import RabbitMQHandler
-
-PARSER = argparse.ArgumentParser()
-PARSER.add_argument('-t', '--test', help='Run application in test mode', action='store_true')
-ARGS = PARSER.parse_args()
-LOGGER = logging.getLogger('ingestion-api')
-LOGGER.setLevel(logging.DEBUG)
-
-
-class TokenAuth(TokenAuth):
-    """
-    Function for using authorization tokens
-    """
-    def check_auth(self, token, allowed_roles, resource, method):
-        """Method that receives an authorization token, and checks if it is
-        a valid token.
-
-        Arguments:
-            token {str} -- Eve API Token.
-            allowed_roles {[str]} -- List of strings indicating the allowed
-            roles of the user.
-            resource {str} -- The resource being accessed.
-            method {str} -- The method being used.
-        Returns:
-            Object -- Returns the token object if found, None if not.
-        """
-        accounts = app.data.driver.db['accounts']
-        return accounts.find_one({'token': token})
-
-
-def start_celery_task(task, arguments, id):
-    """
-    Generic function to start a task through celery
-
-    Arguments:
-        task {[type]} -- [description]
-        arguments {[type]} -- [description]
-        id {[type]} -- [description]
-    """
-    task_exchange = Exchange('', type='direct')
-    connection = Connection('amqp://rabbitmq')
-    channel = connection.channel()
-    # Generate Producer
-    producer = Producer(
-        exchange=task_exchange,
-        channel=channel,
-        routing_key='celery',
-        serializer='json'
-    )
-    # Construct data
-    payload = {
-        "id": id,
-        "task": task,
-        "args": arguments,
-        "kwargs": {},
-        "retries": 0
-    }
-    # Send data
-    producer.publish(
-        json.dumps(payload, default=json_util.default),
-        content_type='application/json',
-        content_encoding='utf-8'
-    )
-    connection.release()
-
-
-def get_trials(request, lookup):
-    """
-    Takes a username, and returns a list of trials they are part of
-
-    Arguments:
-        username {string} -- Name of the user
-
-    Returns:
-        dict -- Mongo return object
-    """
-    url = request.url
-    query_params = parse_qs(urlparse(url).query)
-
-    if not len(query_params) == 1:
-        request = None
-        abort(500, 'Error, wrong number of params passed')
-
-    if 'username' not in query_params:
-        request = None
-        abort(500, 'Username is the only valid query param!')
-
-    username = query_params['username'][0]
-
-    lookup['collaborators'] = username
-
-
-def get_job_status(request, lookup):
-    """
-    Fetches all jobs started by the given user.
-
-    Arguments:
-        request {[type]} -- [description]
-        lookup {[type]} -- [description]
-    """
-    url = request.url
-    query_params = parse_qs(urlparse(url).query)
-
-    if not len(query_params) == 1:
-        request = None
-        abort(500, 'Error, wrong number of params passed')
-
-    if 'started_by' not in query_params:
-        request = None
-        abort(500, 'Name is the only valid query param!')
-
-    username = query_params['started_by'][0]
-
-    lookup['started_by'] = username
-
-
-def log_file_patched(items):
-    """
-    Logs when the job has been updated with google URIs
-
-    Arguments:
-        items {[type]} -- [description]
-    """
-    for item in items:
-        LOGGER.debug("Google Upload for item completed")
-
-
-def add_rabbit_handler():
-    RABBIT = RabbitMQHandler('amqp://rabbitmq')
-    LOGGER.addHandler(RABBIT)
-
-
-def process_data_upload(item, original):
-    # The first task is to tell Celery to move the files.
-    google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
-    start_celery_task(
-        "framework.tasks.cromwell_tasks.move_files_from_staging",
-        [original, google_path],
-        uuid4().int
-    )
-
-
-def register_upload_job(items):
-    """
-    Logs when file upload begins
-
-    Arguments:
-        item {[dict]} -- [description]
-    """
-    files = []
-    for record in items:
-        record['start_time'] = datetime.datetime.now().isoformat(),
-        for data_item in record['files']:
-            files.append(data_item)
-            data_item['assay'] = ObjectId(data_item['assay'])
-            data_item['trial'] = ObjectId(data_item['trial'])
-
-    duplicate_filenames = find_duplicates(files)
-    print(duplicate_filenames)
-
-    if duplicate_filenames:
-        print("Error, duplicate file, upload rejected")
-        abort(500, "Upload aborted, duplicate files found")
-
-
-def run_analysis_job(items):
-    """
-    Runs the specified pipeline
-
-    Arguments:
-        items {[type]} -- [description]
-    """
-    for item in items:
-        run_id = str(item['_id'])
-        _etag = str(item['_etag'])
-        trial = str(item['trial'])
-        assay = str(item['assay'])
-        samples = item['samples']
-        start_celery_task(
-            "framework.tasks.analysis_tasks.run_bwa_pipeline",
-            [trial, assay, 'lloyd', run_id, _etag, samples],
-            run_id
-        )
-
-
-def find_duplicates(items):
-    """
-    Searches database for any items that are duplicates of already uploaded items and
-    filters them out
-    Arguments:
-        items {[type]} -- [description]
-    """
-
-    query = {'$or': []}
-
-    for record in items:
-        query['$or'].append({
-            'assay': ObjectId(record['assay']),
-            'trial': ObjectId(record['trial']),
-            'file_name': record['file_name']
-        })
-
-    print(query)
-
-    data = app.data.driver.db['data']
-    data_results = list(data.find(query, projection=['file_name']))
-    print(data_results)
-    return [x['file_name'] for x in data_results]
-
-    # Return a list of any duplicate records
-
-
-def serialize_objectids(items):
-    for record in items:
-        record['assay'] = ObjectId(record['assay'])
-        record['trial'] = ObjectId(record['trial'])
-
-
-def register_analysis(items):
-    for analysis in items:
-        analysis['status'] = {
-            'progress': 'In Progress',
-            'message': ''
-        }
-        analysis['start_date'] = datetime.datetime.now().isoformat()
-
-app = Eve(
-    'ingestion_api',
-    auth=TokenAuth,
-    settings='settings.py'
+from eve_swagger import swagger, add_documentation
+from flask import (
+    current_app as APP,
+    jsonify,
+    _request_ctx_stack
+)
+from flask_oauthlib.client import OAuth
+import hooks
+from constants import (
+    AUTH0_AUDIENCE,
+    LOGGER,
+    AUTH0_CLIENT_ID,
+    AUTH0_CLIENT_SECRET, AUTH0_DOMAIN, ALGORITHMS
 )
 
 
-@app.after_request
+class BearerAuth(TokenAuth):
+    """
+    Handles bearer token authorization.
+
+    Arguments:
+        BasicAuth {[type]} -- [description]
+    """
+    def check_auth(self, token, allowed_roles, resource, method):
+        """[summary]
+
+        Arguments:
+            token {dict} -- JWT token.
+            allowed_roles {[str]} -- Array of strings of user roles.
+            resource {[type]} -- [description]
+            method {[type]} -- [description]
+        """
+        return token_auth(token)
+
+
+APP = Eve(
+    'ingestion_api',
+    auth=BearerAuth,
+    settings='settings.py'
+)
+
+APP.register_blueprint(swagger)
+
+APP.config['SWAGGER_INFO'] = {
+    'title': 'CIDC API',
+    'version': '0.1',
+    'description': 'CIDC Data Upload AI',
+    'termsOfService': '',
+    'contact': {
+        'name': 'L'
+    },
+    'license': {
+        'name': 'MIT'
+    },
+    'schemes': ['http', 'https']
+}
+
+add_documentation({'paths': {'/status': {'get': {'parameters': [
+    {
+        'in': 'query',
+        'name': 'foobar',
+        'required': False,
+        'description': 'special query parameter',
+        'type': 'string'
+    }]
+}}}})
+
+APP.debug = True
+
+
+# Format error response and append status code.
+class AuthError(Exception):
+    """[summary]
+
+    Arguments:
+        Exception {[type]} -- [description]
+    """
+    def __init__(self, error, status_code):
+        self.error = error
+        self.status_code = status_code
+
+
+@APP.errorhandler(AuthError)
+def handle_auth_error(ex):
+    """[summary]
+
+    Arguments:
+        ex {[type]} -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
+    response = jsonify(ex.error)
+    response.status_code = ex.status_code
+    return response
+
+OAUTH = OAuth(APP)
+AUTH0 = OAUTH.remote_app(
+    'auth0',
+    consumer_key=AUTH0_CLIENT_ID,
+    consumer_secret=AUTH0_CLIENT_SECRET,
+    request_token_params={
+        'scope': 'openid profile email',
+        'audience': AUTH0_AUDIENCE
+    },
+    base_url='https://%s' % AUTH0_DOMAIN,
+    access_token_method='POST',
+    access_token_url='/oauth/token',
+    authorize_url='/authorize',
+)
+
+
+def token_auth(token):
+    """
+    Checks if the supplied token is valid.
+
+    Arguments:
+        token {[type]} -- [description]
+
+    Raises:
+        AuthError -- [description]
+        AuthError -- [description]
+        AuthError -- [description]
+        AuthError -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
+    json_url = "https://" + AUTH0_DOMAIN + "/.well-known/jwks.json"
+    jsonurl = urlopen(json_url)
+    jwks = json.loads(jsonurl.read())
+
+    if not token:
+        print('no token received')
+        return False
+
+    unverified_header = None
+    try:
+        unverified_header = jwt.get_unverified_header(token)
+    except jwt.JWTError as err:
+        print(err)
+
+    if not jwks:
+        print('no jwks')
+        return False
+
+    rsa_key = {}
+    for key in jwks["keys"]:
+        if key["kid"] == unverified_header["kid"]:
+            rsa_key = {
+                "kty": key["kty"],
+                "kid": key["kid"],
+                "use": key["use"],
+                "n": key["n"],
+                "e": key["e"]
+            }
+    if rsa_key:
+        try:
+            payload = jwt.decode(
+                token,
+                rsa_key,
+                algorithms=ALGORITHMS,
+                audience=AUTH0_AUDIENCE,
+                issuer="https://"+AUTH0_DOMAIN+"/"
+            )
+        except jwt.ExpiredSignatureError:
+            print('Expired Signature Error')
+            raise AuthError(
+                {
+                    "code": "token_expired",
+                    "description": "token is expired"
+                },
+                401
+            )
+        except jwt.JWTClaimsError as claims:
+            print(claims)
+            raise AuthError(
+                {
+                    "code": "invalid_claims",
+                    "description": "incorrect claims, please check the audience and issuer"
+                },
+                401
+            )
+        except Exception as err:
+            print(err)
+            raise AuthError(
+                {
+                    "code": "invalid_header",
+                    "description": "Unable to parse authentication token."
+                },
+                401
+            )
+
+        # Get user e-mail from userinfo endpoint.
+        if 'gty' not in payload:
+            res = requests.get(
+                'https://cidc-test.auth0.com/userinfo',
+                headers={"Authorization": 'Bearer {}'.format(token)}
+            )
+
+            if not res.status_code == 200:
+                print("There was an error fetching user information")
+                raise AuthError(
+                    {
+                        "code": "No_info",
+                        "description": "No userinfo found at endpoint"
+                    },
+                    401
+                )
+
+            payload['email'] = res.json()['email']
+            _request_ctx_stack.top.current_user = payload
+            return True
+        else:
+            payload['email'] = "taskmanager-client"
+            _request_ctx_stack.top.current_user = payload
+            return True
+    raise AuthError(
+        {
+            "code": "invalid_header",
+            "description": "Unable to find appropriate key"
+        },
+        401
+    )
+
+
+@APP.after_request
 def after_request(response):
     """A function to add google path details to the response header when files are uploaded
 
     Decorators:
+
         app -- Flask decorator for application
 
     Arguments:
@@ -265,40 +250,48 @@ def after_request(response):
     Returns:
         dict -- HTTP response with modified headers.
     """
-    response.headers.add('google_url', app.config['GOOGLE_URL'])
-    response.headers.add('google_folder_path', app.config['GOOGLE_FOLDER_PATH'])
+    response.headers.add('google_url', APP.config['GOOGLE_URL'])
+    response.headers.add('google_folder_path', APP.config['GOOGLE_FOLDER_PATH'])
     return response
 
 
-@app.errorhandler(500)
+@APP.errorhandler(500)
 def custom500(error):
-    return jsonify({'message': error.description}), 500
+    """
+    Custom error handler to send a message with a 500 error.
+
+    Arguments:
+        error {[type]} -- [description]
+
+    Returns:
+        [type] -- [description]
+    """
+    if error.description:
+        print(error.description)
+        return jsonify({'message': error.description}), 500
+    print(error)
+    return jsonify({'message': error}), 500
 
 
 def create_app():
-
+    """
+    Configures the eve app.
+    """
     # Ingestion Hooks
-    app.on_updated_ingestion += process_data_upload
-    app.on_insert_ingestion += register_upload_job
+    APP.on_updated_ingestion += hooks.process_data_upload
+    APP.on_insert_ingestion += hooks.register_upload_job
 
     # Data Hooks
-    app.on_insert_data += serialize_objectids
+    APP.on_insert_data += hooks.serialize_objectids
+    APP.on_inserted_data += hooks.check_for_analysis
 
     # Analysis Hooks
-    app.on_insert_analysis += register_analysis
-    app.on_inserted_analysis += run_analysis_job
-    app.on_pre_GET_status += get_job_status
+    APP.on_insert_analysis += hooks.register_analysis
 
-    # Trials Hooks
-    app.on_pre_GET_trials += get_trials
-
-    if ARGS.test:
-        app.config['TESTING'] = True
-        app.config['MONGO_HOST'] = 'localhost'
-    else:
-        add_rabbit_handler()
+    # Pre get filter hook.
+    APP.on_pre_GET += hooks.filter_on_id
 
 
 if __name__ == '__main__':
     create_app()
-    app.run(host='0.0.0.0', port=5000)
+    APP.run(host='0.0.0.0', port=5000)
