@@ -1,6 +1,6 @@
 def label = "worker-${UUID.randomUUID().toString()}"
 
-podTemplate(label: label, namespace: "jenkins", yaml: """
+podTemplate(label: label, namespace: "jenkins", ttyEnabled: true, command: 'cat', yaml: """
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
