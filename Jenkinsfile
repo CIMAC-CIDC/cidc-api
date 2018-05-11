@@ -27,8 +27,7 @@ spec:
         envFrom:
           - configMapRef:
               name: service-env
-        command: ['python3']
-        args: ['ingestion_api.py']
+        command: ['cat']
         image: undivideddocker/ingestion-api:latest
         name: cidc-ingestion-api
         ports:
