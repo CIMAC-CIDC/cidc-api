@@ -37,10 +37,9 @@ spec:
 ) {
     node(label) {
         stage('Run Unit Tests') {
-          container('cidc-ingestion-api') {
-              checkout scm
-              sh 'nose2'
-          }
+          checkout scm
+          sh 'ls'
+          sh 'nose2'
         }
     }
 }
