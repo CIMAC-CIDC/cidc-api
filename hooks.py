@@ -93,7 +93,7 @@ def check_for_analysis(items: List[dict]) -> None:
     if mafs:
         start_celery_task(
             "framework.tasks.processing_tasks.parse_maf",
-            mafs,
+            [mafs],
             uuid4().int
         )
 

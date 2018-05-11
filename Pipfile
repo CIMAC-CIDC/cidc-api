@@ -4,7 +4,15 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-attrs = "*"
+requests = "*"
+python-jose = "*"
+kombu = "*"
+bson = "*"
+flask = "==0.12"
+flask-oauthlib = "==0.9.4"
+nose2 = "==0.7.4"
+eve = "==0.7.8"
+eve-swagger = "*"
 python-dotenv = "*"
 
 [dev-packages]

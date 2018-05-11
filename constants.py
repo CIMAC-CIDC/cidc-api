@@ -6,16 +6,10 @@ Constants file for computing some environmental variables.
 import logging
 from os import environ as env
 from dotenv import find_dotenv, load_dotenv
-from cidc_utils.loghandler import RabbitMQHandler
 
 ENV_FILE = find_dotenv()
 if ENV_FILE:
     load_dotenv(ENV_FILE)
-
-if env.get('IN_CLOUD'):
-    RABBIT_MQ_ADDRESS = (
-        'amqp://' + env.get('RABBITMQ_SERVICE_HOST') + ':' + env.get('RABBITMQ_SERVICE_PORT')
-    )
 
 AUTH0_CALLBACK_URL = env.get('AUTH0_CALLBACK_URL')
 AUTH0_CLIENT_ID = env.get('AUTH0_CLIENT_ID')
@@ -24,6 +18,11 @@ AUTH0_DOMAIN = env.get('AUTH0_DOMAIN')
 AUTH0_AUDIENCE = env.get('AUTH0_AUDIENCE')
 ALGORITHMS = ["RS256"]
 RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
+
+if env.get('IN_CLOUD'):
+    RABBIT_MQ_ADDRESS = (
+        'amqp://' + env.get('RABBITMQ_SERVICE_HOST') + ':' + env.get('RABBITMQ_SERVICE_PORT')
+    )
 
 # RABBIT_MQ_HANDLER = RabbitMQHandler(uri=RABBIT_MQ_ADDRESS)
 LOGGER = logging.getLogger('ingestion-api')
