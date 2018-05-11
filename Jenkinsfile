@@ -4,11 +4,11 @@ podTemplate(label: label, namespace: "jenkins", ttyEnabled: true, command: 'cat'
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  namespace: jenkins
   creationTimestamp: null
   labels:
     io.kompose.service: ingestion-api
   name: ingestion-api
+  namespace: jenkins
 spec:
   replicas: 1
   template:
@@ -38,7 +38,10 @@ spec:
 ) {
     node(label) {
         stage('Run Unit Tests') {
-          
+          container('cidc-ingestion-api') {
+              checkout scm
+              sh 'nose2'
+          }
         }
     }
 }
