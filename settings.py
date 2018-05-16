@@ -17,8 +17,6 @@ if env.get('IN_CLOUD'):
         'connect': True,
         'tz_aware': True,
         'appname': 'flask_app_name',
-        'username': MONGO_USERNAME,
-        'password': MONGO_PASSWORD
     }
 
 MONGO_DBNAME = 'CIDC'

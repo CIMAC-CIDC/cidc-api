@@ -10,7 +10,6 @@ import requests
 from jose import jwt
 from eve import Eve
 from eve.auth import TokenAuth
-from eve_swagger import swagger, add_documentation
 from flask import (
     current_app as APP,
     jsonify,
@@ -50,32 +49,6 @@ APP = Eve(
     auth=BearerAuth,
     settings='settings.py'
 )
-
-APP.register_blueprint(swagger)
-
-APP.config['SWAGGER_INFO'] = {
-    'title': 'CIDC API',
-    'version': '0.1',
-    'description': 'CIDC Data Upload AI',
-    'termsOfService': '',
-    'contact': {
-        'name': 'L'
-    },
-    'license': {
-        'name': 'MIT'
-    },
-    'schemes': ['http', 'https']
-}
-
-add_documentation({'paths': {'/status': {'get': {'parameters': [
-    {
-        'in': 'query',
-        'name': 'foobar',
-        'required': False,
-        'description': 'special query parameter',
-        'type': 'string'
-    }]
-}}}})
 
 APP.debug = True
 

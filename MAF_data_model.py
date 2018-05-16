@@ -4,29 +4,8 @@ Validator for MAF data.
 """
 
 
-def float_coercer(field):
-    """
-    Coerces value to float if it exists.
-
-    Arguments:
-        field {[type]} -- [description]
-
-    Returns:
-        [type] -- [description]
-    """
-    return None if not field else float(field)
-
-
-def int_coercer(field):
-    """[summary]
-
-    Arguments:
-        field {[type]} -- [description]
-
-    Returns:
-        [type] -- [description]
-    """
-    return None if not field else int(field)
+float_coercer = lambda x: None if not x else int(x)
+int_coercer = lambda x: None if not x else int(x)
 
 
 MAF = {
@@ -486,10 +465,10 @@ MAF = {
         "nullable": True
     },
     "Score": {
-        "required": True,
+        "required": False,
         "type": "float",
         "coerce": float_coercer,
-        "nullable": True
+        "nullable": True,
     },
     "ExAC_AF_SAS": {
         "required": False,
@@ -563,7 +542,7 @@ MAF = {
         "required": True,
         "type": "integer",
         "coerce": int_coercer,
-        "empty": False
+        "nullable": False
     },
     "HGVSc": {
         "required": False,
