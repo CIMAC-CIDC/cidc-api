@@ -11,6 +11,7 @@ MONGO_REPLICA_SET = None
 MONGO_USERNAME = 'python-eve'
 MONGO_PASSWORD = 'apple'
 
+
 if env.get('IN_CLOUD'):
     MONGO_URI = "mongodb://mongo-0.mongo,mongo-1.mongo,mongo-2.mongo:27017/CIDC?replicaSet=rs0"
     MONGO_OPTIONS = {
@@ -20,6 +21,10 @@ if env.get('IN_CLOUD'):
     }
 
 MONGO_DBNAME = 'CIDC'
+
+if env.get('JENKINS'):
+    MONGO_URI = "mongodb://mongo-0.mongo,mongo-1.mongo,mongo-2.mongo:27017/TEST?replicaSet=rs0.default.svc.cluster.local"
+
 GOOGLE_URL = "gs://lloyd-test-pipeline/"
 GOOGLE_FOLDER_PATH = "Experimental-Data/"
 
