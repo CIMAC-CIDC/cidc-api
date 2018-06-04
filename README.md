@@ -1,4 +1,5 @@
-![circleci](https://circleci.com/gh/dfci/cidc-ingestion-api.svg?style=shield&circle-token=f1cc21bf7abc3bddd43d1ed02bc2d24849d18f0f|alt=circleci)
+![Build Status](http://35.196.130.201/jenk/buildStatus/icon?job=API%20Repo/master)
+
 ## Ingestion API
 
 Python-EVE powered API for CIDC bioinformatics pipeline. This API is designed to be used with a CLI tool dsitributed to bioinformaticians. 
