@@ -126,8 +126,10 @@ DATA_AGG_INPUTS = {
                                     "$in": "$input_names"
                                 }
                             },
-                            "mapping": {
-                                "$in": "$inputs"
+                            {
+                                "mapping": {
+                                    "$in": "$inputs"
+                                }
                             },
                         ],
                         "processed": False
