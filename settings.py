@@ -23,7 +23,13 @@ if env.get('IN_CLOUD'):
 MONGO_DBNAME = 'CIDC'
 
 if env.get('JENKINS'):
-    MONGO_URI = "mongodb://mongo-0.mongo,mongo-1.mongo,mongo-2.mongo:27017/TEST?replicaSet=rs0.default.svc.cluster.local"
+    MONGO_URI = (
+        "mongodb://mongo-0.mongo.default.svc.cluster.local," +
+        "mongo-1.mongo.default.svc.cluster.local," +
+        "mongo-2.mongo.default.svc.cluster.local" +
+        ":27017/TEST?replicaSet=rs0"
+        )
+    MONGO_DBNAME = "TEST"
 
 GOOGLE_URL = "gs://lloyd-test-pipeline/"
 GOOGLE_FOLDER_PATH = "Experimental-Data/"
@@ -114,9 +120,16 @@ DATA_AGG_INPUTS = {
             'pipeline': [
                 {
                     "$match": {
-                        "mapping": {
-                            "$in": "$inputs"
-                        },
+                        "$or": [
+                            {
+                                "file_name": {
+                                    "$in": "$input_names"
+                                }
+                            },
+                            "mapping": {
+                                "$in": "$inputs"
+                            },
+                        ],
                         "processed": False
                     }
                 },
