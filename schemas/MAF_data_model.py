@@ -3,9 +3,7 @@
 Validator for MAF data.
 """
 
-
-float_coercer = lambda x: None if not x else int(x)
-int_coercer = lambda x: None if not x else int(x)
+from schemas.coercers import FLOAT_COERCER as float_coercer, INT_COERCER as int_coercer
 
 
 MAF = {

@@ -3,7 +3,12 @@
 Settings file that lays out the database schema, as well as other constant variables.
 """
 from os import environ as env
-from MAF_data_model import MAF
+from schemas.MAF_data_model import MAF
+from schemas.hla_schema import HLA
+from schemas.neoantigen_schema import NEOANTIGEN
+from schemas.tumor_purity_ploidy_schema import PURITY, CONFINTS_CP
+from schemas.clonality_schema import CLONALITY_CLUSTER, LOCI, PYCLONE
+from schemas.cnv_schema import CNV
 
 MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
@@ -120,18 +125,9 @@ DATA_AGG_INPUTS = {
             'pipeline': [
                 {
                     "$match": {
-                        "$or": [
-                            {
-                                "file_name": {
-                                    "$in": "$input_names"
-                                }
-                            },
-                            {
-                                "mapping": {
-                                    "$in": "$inputs"
-                                }
-                            },
-                        ],
+                        "mapping": {
+                            "$in": "$inputs"
+                        },
                         "processed": False
                     }
                 },
@@ -278,7 +274,7 @@ TRIALS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'allowed_roles': ['user', 'admin', 'superuser'],
-    'allowed_filters': ['collaborators', 'principal_investigator', '_id'],
+    'allowed_filters': ['collaborators', 'principal_investigator', '_id', 'assays.assay_id'],
     'schema': {
         'trial_name': {
             'type': 'string',
@@ -415,5 +411,13 @@ DOMAIN = {
     'analysis': ANALYSIS,
     'status': ANALYSIS_STATUS,
     'data/query': DATA_AGG_INPUTS,
-    'vcf': MAF_PT
+    'vcf': MAF_PT,
+    'hla': HLA,
+    'neoantigen': NEOANTIGEN,
+    'purity': PURITY,
+    'clonality_cluster': CLONALITY_CLUSTER,
+    'loci': LOCI,
+    'confints_cp': CONFINTS_CP,
+    'pyclone': PYCLONE,
+    'cnv': CNV
 }

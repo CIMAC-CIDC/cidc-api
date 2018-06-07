@@ -88,14 +88,12 @@ def check_for_analysis(items: List[dict]) -> None:
         uuid4().int
     )
 
-    # If any records are MAF files, send them to be processed.
-    mafs = [item for item in items if re.search(r'.maf$', item['file_name'])]
-    if mafs:
-        start_celery_task(
-            "framework.tasks.processing_tasks.parse_maf",
-            [mafs],
-            uuid4().int
-        )
+    # Start a scan for files that require postprocessing.
+    start_celery_task(
+        "framework.tasks.processing_tasks.postprocessing",
+        [items],
+        uuid4().int
+    )
 
 
 # On insert data.

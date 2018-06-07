@@ -50,8 +50,6 @@ APP = Eve(
     settings='settings.py'
 )
 
-APP.debug = True
-
 
 # Format error response and append status code.
 class AuthError(Exception):
