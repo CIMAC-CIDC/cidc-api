@@ -8,5 +8,7 @@ RUN pip install pipenv \
     && groupadd -g 999 eve-runner && \
         useradd -r -u 999 -g eve-runner eve-runner
 
+RUN mkdir -p /home/jenkins/workspace && \
+    chown -R eve-runner /home/jenkins/workspace
 USER eve-runner
 CMD ["python", "ingestion_api.py"] 
