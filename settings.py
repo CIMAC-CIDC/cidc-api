@@ -9,6 +9,7 @@ from schemas.neoantigen_schema import NEOANTIGEN
 from schemas.tumor_purity_ploidy_schema import PURITY, CONFINTS_CP
 from schemas.clonality_schema import CLONALITY_CLUSTER, LOCI, PYCLONE
 from schemas.cnv_schema import CNV
+from schemas.clinical_data_schema import CLINICAL_1021
 
 MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
@@ -419,5 +420,6 @@ DOMAIN = {
     'loci': LOCI,
     'confints_cp': CONFINTS_CP,
     'pyclone': PYCLONE,
-    'cnv': CNV
+    'cnv': CNV,
+    'clinical_data': CLINICAL_1021
 }
