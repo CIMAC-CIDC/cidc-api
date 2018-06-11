@@ -421,5 +421,5 @@ DOMAIN = {
     'confints_cp': CONFINTS_CP,
     'pyclone': PYCLONE,
     'cnv': CNV,
-    'clinical_data': CLINICAL_1021
+    'clinical_data': CLINICAL_1021 
 }

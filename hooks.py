@@ -212,9 +212,13 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         request {str} -- Request being sent to endpoint.
         lookup {dict} -- Filter condition.
     """
+    doc_id = None
+    # Check for the case of a document ID query.
+    if len(request.args) == 0 and not request.url.split('/')[-1] == resource:
+        doc_id = request.url.split('/')[-1]
+
     # Get current user.
     current_user = get_current_user()
-
     # If the caller is a service, not a user, no need for filters.
     if 'gty' in current_user and current_user['gty'] == 'client-credentials':
         return
@@ -233,10 +237,13 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
             if resource == 'assays':
                 # Get the list of assay_ids the user is cleared to know about.
                 assay_ids = [str(x['assay_id']) for trial in trials for x in trial['assays']]
-                lookup['_id'] = {'$in': assay_ids}
+                if not doc_id:
+                    lookup['_id'] = {'$in': assay_ids}
+                elif doc_id not in assay_ids:
+                    abort(500, "You are not cleared to view this item")
             else:
                 trial_ids = [str(x['_id']) for x in trials]
                 lookup['trial'] = {'$in': trial_ids}
     except TypeError as err:
         print(err)
-        abort(500, "There was an error processing your credentials.")
+        abort(500, "There was an error processing your credentials.//Filter")

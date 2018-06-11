@@ -237,11 +237,12 @@ def custom500(error):
     Returns:
         [type] -- [description]
     """
-    if error.description:
+    try:
         print(error.description)
         return jsonify({'message': error.description}), 500
-    print(error)
-    return jsonify({'message': error}), 500
+    except AttributeError:
+        err_str = str(error)
+        return jsonify({'message': err_str}), 500
 
 
 def create_app():
