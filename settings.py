@@ -10,13 +10,14 @@ from schemas.tumor_purity_ploidy_schema import PURITY, CONFINTS_CP
 from schemas.clonality_schema import CLONALITY_CLUSTER, LOCI, PYCLONE
 from schemas.cnv_schema import CNV
 from schemas.clinical_data_schema import CLINICAL_1021
+from schemas.rsem_schema import RSEM_EXPRESSION, RSEM_ISOFORMS
 
 MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
 MONGO_REPLICA_SET = None
 MONGO_USERNAME = 'python-eve'
 MONGO_PASSWORD = 'apple'
-
+MONGO_DBNAME = 'CIDC'
 
 if env.get('IN_CLOUD'):
     MONGO_URI = "mongodb://mongo-0.mongo,mongo-1.mongo,mongo-2.mongo:27017/CIDC?replicaSet=rs0"
@@ -25,8 +26,6 @@ if env.get('IN_CLOUD'):
         'tz_aware': True,
         'appname': 'flask_app_name',
     }
-
-MONGO_DBNAME = 'CIDC'
 
 if env.get('JENKINS'):
     MONGO_URI = (
@@ -421,5 +420,7 @@ DOMAIN = {
     'confints_cp': CONFINTS_CP,
     'pyclone': PYCLONE,
     'cnv': CNV,
-    'clinical_data': CLINICAL_1021 
+    'clinical_data': CLINICAL_1021,
+    'rsem_expression': RSEM_EXPRESSION,
+    'rsem_isoforms': RSEM_ISOFORMS
 }

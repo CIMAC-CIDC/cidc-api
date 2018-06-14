@@ -32,5 +32,5 @@ def create_biomarker_schema(schema: dict) -> dict:
             }
         }
     }
-    base_dict.update(schema)
+    base_dict['schema'].update(schema)
     return base_dict

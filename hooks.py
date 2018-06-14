@@ -4,7 +4,6 @@ Hooks responsible for determining the endpoint behavior of the application.
 """
 import datetime
 import json
-import re
 from typing import List
 from uuid import uuid4
 from bson import json_util, ObjectId
@@ -178,10 +177,6 @@ def process_data_upload(item: dict, original: dict) -> None:
         item {dict} -- Records to be moved
         original {dict} -- Patched upload record with GSURL.
     """
-    # The first task is to tell Celery to move the files.
-    # message = "Ingestion upload completed for " + item['_id']
-    # LOGGER.debug(message)
-
     google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
     start_celery_task(
         "framework.tasks.cromwell_tasks.move_files_from_staging",
@@ -213,8 +208,9 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         lookup {dict} -- Filter condition.
     """
     doc_id = None
+
     # Check for the case of a document ID query.
-    if len(request.args) == 0 and not request.url.split('/')[-1] == resource:
+    if not request.args and not request.url.split('/')[-1] == resource:
         doc_id = request.url.split('/')[-1]
 
     # Get current user.
@@ -246,4 +242,4 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
                 lookup['trial'] = {'$in': trial_ids}
     except TypeError as err:
         print(err)
-        abort(500, "There was an error processing your credentials.//Filter")
+        abort(500, "There was an error processing your viewable data.")
