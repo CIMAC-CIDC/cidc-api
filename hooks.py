@@ -5,7 +5,6 @@ Hooks responsible for determining the endpoint behavior of the application.
 import datetime
 import json
 from typing import List
-from uuid import uuid4
 from bson import json_util, ObjectId
 from flask import current_app as app, abort, _request_ctx_stack
 from kombu import Connection, Exchange, Producer
@@ -84,14 +83,14 @@ def check_for_analysis(items: List[dict]) -> None:
     start_celery_task(
         "framework.tasks.analysis_tasks.analysis_pipeline",
         [],
-        uuid4().int
+        678
     )
 
     # Start a scan for files that require postprocessing.
     start_celery_task(
         "framework.tasks.processing_tasks.postprocessing",
         [items],
-        uuid4().int
+        91011
     )
 
 
@@ -149,6 +148,7 @@ def start_celery_task(task: str, arguments: object, task_id: int) -> None:
     )
 
     # Construct data
+    # is the task ID necessary here?
     payload = {
         "id": task_id,
         "task": task,
@@ -181,7 +181,7 @@ def process_data_upload(item: dict, original: dict) -> None:
     start_celery_task(
         "framework.tasks.cromwell_tasks.move_files_from_staging",
         [original, google_path],
-        uuid4().int
+        12345
     )
 
 

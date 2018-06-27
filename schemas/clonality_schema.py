@@ -1,7 +1,7 @@
 """
 Schemas for the various clonality metrics
 """
-from schemas import float_coercer, int_coercer, create_biomarker_schema
+from schemas import float_coercer, create_biomarker_schema
 
 CLONALITY_CLUSTER = create_biomarker_schema({
     'sample_id': {
@@ -9,13 +9,13 @@ CLONALITY_CLUSTER = create_biomarker_schema({
         'required': True
     },
     'cluster_id': {
-        'type': 'integer',
-        'coerce': int_coercer,
+        'type': 'float',
+        'coerce': float_coercer,
         'required': True
     },
     'size': {
-        'type': 'integer',
-        'coerce': int_coercer,
+        'type': 'float',
+        'coerce': float_coercer,
         'required': True
     },
     'mean': {
@@ -40,9 +40,9 @@ LOCI = create_biomarker_schema({
         'required': True
     },
     'cluster_id': {
-        'type': 'integer',
+        'type': 'float',
         'required': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'cellular_prevalence': {
         'type': 'float',
@@ -67,28 +67,28 @@ PYCLONE = create_biomarker_schema({
         'required': True
     },
     'ref_counts': {
-        'type': 'integer',
-        'coerce': int_coercer,
+        'type': 'float',
+        'coerce': float_coercer,
         'required': True,
     },
     'var_counts': {
-        'type': 'integer',
-        'coerce': int_coercer,
+        'type': 'float',
+        'coerce': float_coercer,
         'required': True,
     },
     'normal_cn': {
-        'type': 'integer',
-        'coerce': int_coercer,
+        'type': 'float',
+        'coerce': float_coercer,
         'required': True,
     },
     'minor_cn': {
-        'type': 'integer',
-        'coerce': int_coercer,
+        'type': 'float',
+        'coerce': float_coercer,
         'required': True,
     },
     'major_cn': {
-        'type': 'integer',
-        'coerce': int_coercer,
+        'type': 'float',
+        'coerce': float_coercer,
         'required': True,
     },
     'variant_case': {

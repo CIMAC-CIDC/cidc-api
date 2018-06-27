@@ -3,7 +3,7 @@
 Validator for MAF data.
 """
 
-from schemas.coercers import FLOAT_COERCER as float_coercer, INT_COERCER as int_coercer
+from schemas import float_coercer
 
 
 MAF = {
@@ -47,8 +47,8 @@ MAF = {
     },
     "n_ref_count": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "DOMAINS": {
@@ -63,8 +63,8 @@ MAF = {
     },
     "Start_Position": {
         "required": True,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "empty": False
     },
     "Variant_Classification": {
@@ -74,8 +74,8 @@ MAF = {
     },
     "CDS_position": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "variant_id": {
@@ -181,14 +181,14 @@ MAF = {
     },
     "cDNA_position": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "n_depth": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "all_effects": {
@@ -229,8 +229,8 @@ MAF = {
     },
     "t_depth": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "Tumor_Seq_Allele2": {
@@ -283,8 +283,8 @@ MAF = {
     },
     "Protein_position": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "ExAC_AC_AN_EAS": {
@@ -365,8 +365,8 @@ MAF = {
     },
     "MOTIF_POS": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "BIOTYPE": {
@@ -538,8 +538,8 @@ MAF = {
     },
     "End_Position": {
         "required": True,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": False
     },
     "HGVSc": {
@@ -570,8 +570,8 @@ MAF = {
     },
     "t_alt_count": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "gnomAD_EAS_AF": {
@@ -593,8 +593,8 @@ MAF = {
     },
     "ALLELE_NUM": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "Exon_Number": {
@@ -645,8 +645,8 @@ MAF = {
     },
     "HIGH_INF_POS": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "gnomAD_NFE_AF": {
@@ -690,8 +690,8 @@ MAF = {
     },
     "t_ref_count": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "FILTER": {
@@ -716,8 +716,8 @@ MAF = {
     },
     "n_alt_count": {
         "required": False,
-        "type": "integer",
-        "coerce": int_coercer,
+        "type": "float",
+        "coerce": float_coercer,
         "nullable": True
     },
     "Chromosome": {

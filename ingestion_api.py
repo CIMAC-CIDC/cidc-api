@@ -15,6 +15,7 @@ from flask import (
     jsonify,
     _request_ctx_stack
 )
+from eve.io.mongo import Validator
 from flask_oauthlib.client import OAuth
 import hooks
 from constants import (
@@ -38,7 +39,7 @@ class BearerAuth(TokenAuth):
         Arguments:
             token {dict} -- JWT token.
             allowed_roles {[str]} -- Array of strings of user roles.
-            resource {[type]} -- [description]
+            resource {string} -- Endpoint being accessed.
             method {[type]} -- [description]
         """
         return token_auth(token)

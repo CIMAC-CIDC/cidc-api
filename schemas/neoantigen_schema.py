@@ -1,7 +1,7 @@
 """
 Schema for neoantigen prediction files.
 """
-from schemas import int_coercer, float_coercer, create_biomarker_schema
+from schemas import float_coercer, create_biomarker_schema
 
 
 NEOANTIGEN = create_biomarker_schema({
@@ -15,9 +15,9 @@ NEOANTIGEN = create_biomarker_schema({
         'type': 'string'
     },
     'gene_number': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'cdna_change': {
         'type': 'string'
@@ -29,9 +29,9 @@ NEOANTIGEN = create_biomarker_schema({
         'type': 'string'
     },
     'peptide_length': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'hla': {
         'type': 'string'
@@ -77,9 +77,9 @@ NEOANTIGEN = create_biomarker_schema({
         'coerce': float_coercer
     },
     'rank': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'ratio': {
         'type': 'float',
@@ -93,24 +93,24 @@ NEOANTIGEN = create_biomarker_schema({
         'type': 'string'
     },
     'hydrophobicCount': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'hydrophilicCount': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'positive': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'negative': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'hydrophobicFraction': {
         'type': 'float',
@@ -123,34 +123,34 @@ NEOANTIGEN = create_biomarker_schema({
         'coerce': float_coercer
     },
     'charge': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'cysCount': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'glnStatus': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'apCount': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'glyStatus': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'oncogeneStatus': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'pos20': {
         'type': 'float',
@@ -190,8 +190,8 @@ NEOANTIGEN = create_biomarker_schema({
         'type': 'string'
     },
     'core_equal': {
-        'type': 'integer',
+        'type': 'float',
         'nullable': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     }
 })

@@ -2,7 +2,6 @@
 """
 Constants file for computing some environmental variables.
 """
-
 import logging
 from os import environ as env
 from dotenv import find_dotenv, load_dotenv

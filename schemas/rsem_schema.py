@@ -2,7 +2,7 @@
 """
 Schema for rsem outputs
 """
-from schemas import int_coercer, float_coercer, create_biomarker_schema
+from schemas import float_coercer, create_biomarker_schema
 
 
 RSEM_EXPRESSION = create_biomarker_schema({
@@ -54,9 +54,9 @@ RSEM_ISOFORMS = create_biomarker_schema({
         'required': True
     },
     'length': {
-        'type': 'integer',
+        'type': 'float',
         'required': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'effective_length': {
         'type': 'float',

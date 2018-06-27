@@ -1,7 +1,7 @@
 """
 Validator schema for copy numebr variant data.
 """
-from schemas import int_coercer, float_coercer, create_biomarker_schema
+from schemas import float_coercer, create_biomarker_schema
 
 CNV = create_biomarker_schema({
     'chromosome': {
@@ -9,14 +9,14 @@ CNV = create_biomarker_schema({
         'required': True
     },
     'start_pos': {
-        'type': 'integer',
+        'type': 'float',
         'required': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'end_pos': {
-        'type': 'integer',
+        'type': 'float',
         'required': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'Bf': {
         'type': 'float',
@@ -24,9 +24,9 @@ CNV = create_biomarker_schema({
         'coerce': float_coercer
     },
     'N_BAF': {
-        'type': 'integer',
+        'type': 'float',
         'required': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'sd_BAF': {
         'type': 'float',
@@ -39,9 +39,9 @@ CNV = create_biomarker_schema({
         'coerce': float_coercer
     },
     'N_ratio': {
-        'type': 'integer',
+        'type': 'float',
         'required': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'sd_ratio': {
         'type': 'float',
@@ -49,19 +49,19 @@ CNV = create_biomarker_schema({
         'coerce': float_coercer
     },
     'CNt': {
-        'type': 'integer',
+        'type': 'float',
         'required': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'A': {
-        'type': 'integer',
+        'type': 'float',
         'required': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'B': {
-        'type': 'integer',
+        'type': 'float',
         'required': True,
-        'coerce': int_coercer
+        'coerce': float_coercer
     },
     'LPP': {
         'type': 'float',
