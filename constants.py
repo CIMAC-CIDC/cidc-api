@@ -2,7 +2,6 @@
 """
 Constants file for computing some environmental variables.
 """
-import logging
 from os import environ as env
 from dotenv import find_dotenv, load_dotenv
 
@@ -22,11 +21,6 @@ if env.get('IN_CLOUD'):
     RABBIT_MQ_ADDRESS = (
         'amqp://' + env.get('RABBITMQ_SERVICE_HOST') + ':' + env.get('RABBITMQ_SERVICE_PORT')
     )
-
-# RABBIT_MQ_HANDLER = RabbitMQHandler(uri=RABBIT_MQ_ADDRESS)
-LOGGER = logging.getLogger('ingestion-api')
-LOGGER.setLevel(logging.DEBUG)
-# LOGGER.addHandler(RABBIT_MQ_HANDLER)
 
 if AUTH0_AUDIENCE is '':
     AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
