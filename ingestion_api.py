@@ -48,13 +48,16 @@ class BearerAuth(TokenAuth):
 APP = Eve(
     'ingestion_api',
     auth=BearerAuth,
-    settings='settings.py'
+    settings='settings.py',
 )
+
+APP.debug = False
 
 
 # Format error response and append status code.
 class AuthError(Exception):
-    """[summary]
+    """
+    [summary]
 
     Arguments:
         Exception {[type]} -- [description]
@@ -66,7 +69,8 @@ class AuthError(Exception):
 
 @APP.errorhandler(AuthError)
 def handle_auth_error(ex):
-    """[summary]
+    """
+    [summary]
 
     Arguments:
         ex {[type]} -- [description]
@@ -233,7 +237,8 @@ def token_auth(token):
 
 @APP.after_request
 def after_request(response):
-    """A function to add google path details to the response header when files are uploaded
+    """
+    A function to add google path details to the response header when files are uploaded
 
     Decorators:
 
@@ -277,12 +282,11 @@ def create_app():
     Configures the eve app.
     """
     # Configure Stackdriver logging.
-    logger = logging.getLogger()
-    logger.setLevel('INFO')
+    APP.logger.setLevel(logging.INFO)
     log_handler = logging.StreamHandler()
     formatter = StackdriverJsonFormatter()
     log_handler.setFormatter(formatter)
-    logger.addHandler(log_handler)
+    APP.logger.addHandler(log_handler)
 
     # Ingestion Hooks
     APP.on_updated_ingestion += hooks.process_data_upload
