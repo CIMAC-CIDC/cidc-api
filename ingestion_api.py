@@ -128,8 +128,11 @@ def token_auth(token):
     unverified_header = None
     try:
         unverified_header = jwt.get_unverified_header(token)
-    except jwt.JWTError as err:
-        print(err)
+    except jwt.JWTError:
+        logging.error({
+            'message': 'Biomarker upload failed',
+            'category': 'ERROR-CELERY'
+        }, exc_info=True)
 
     if not jwks:
         logging.warning({
@@ -277,22 +280,26 @@ def custom500(error):
         return jsonify({'message': err_str}), 500
 
 
-def create_app():
+def configure_logging():
     """
-    Configures the eve app.
+    Configures the loghandlers.
     """
     # Configure Stackdriver logging.
-    APP.logger.setLevel(logging.INFO)
+    logger = logging.getLogger()
+    logger.setLevel('INFO')
     log_handler = logging.StreamHandler()
-    formatter = StackdriverJsonFormatter()
-    log_handler.setFormatter(formatter)
-    APP.logger.addHandler(log_handler)
-
-    APP.logger.info({
+    log_handler.setFormatter(StackdriverJsonFormatter())
+    logger.addHandler(log_handler)
+    logging.info({
         'message': 'LOGGER CONFIGURED',
         'category': 'EVE-TEST-LOGGING'
     })
 
+
+def add_hooks():
+    """
+    Adds the endpoint hooks to the application object.
+    """
     # Ingestion Hooks
     APP.on_updated_ingestion += hooks.process_data_upload
     APP.on_insert_ingestion += hooks.register_upload_job
@@ -309,8 +316,10 @@ def create_app():
 
 
 if __name__ == '__main__':
-    create_app()
+    configure_logging()
+    add_hooks()
     APP.run(host='0.0.0.0', port=5000)
 
 if __name__ != '__main__':
-    create_app()
+    add_hooks()
+    configure_logging()
