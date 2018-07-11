@@ -5,6 +5,7 @@ This file defines the basic behavior of the eve application.
 Users upload files to the google bucket, and then run cromwell jobs on them
 """
 import json
+import logging
 from urllib.request import urlopen
 import requests
 from jose import jwt
@@ -15,12 +16,11 @@ from flask import (
     jsonify,
     _request_ctx_stack
 )
-from eve.io.mongo import Validator
 from flask_oauthlib.client import OAuth
+from cidc_utils.loghandler import StackdriverJsonFormatter
 import hooks
 from constants import (
     AUTH0_AUDIENCE,
-    LOGGER,
     AUTH0_CLIENT_ID,
     AUTH0_CLIENT_SECRET, AUTH0_DOMAIN, ALGORITHMS
 )
@@ -48,13 +48,16 @@ class BearerAuth(TokenAuth):
 APP = Eve(
     'ingestion_api',
     auth=BearerAuth,
-    settings='settings.py'
+    settings='settings.py',
 )
+
+APP.debug = False
 
 
 # Format error response and append status code.
 class AuthError(Exception):
-    """[summary]
+    """
+    [summary]
 
     Arguments:
         Exception {[type]} -- [description]
@@ -66,7 +69,8 @@ class AuthError(Exception):
 
 @APP.errorhandler(AuthError)
 def handle_auth_error(ex):
-    """[summary]
+    """
+    [summary]
 
     Arguments:
         ex {[type]} -- [description]
@@ -115,7 +119,10 @@ def token_auth(token):
     jwks = json.loads(jsonurl.read())
 
     if not token:
-        print('no token received')
+        logging.warning({
+            'message': 'no token received',
+            'category': 'WARNING-EVE-AUTH'
+        })
         return False
 
     unverified_header = None
@@ -125,7 +132,10 @@ def token_auth(token):
         print(err)
 
     if not jwks:
-        print('no jwks')
+        logging.warning({
+            'message': 'no jwks key',
+            'category': 'WARNING-EVE-AUTH'
+        })
         return False
 
     rsa_key = {}
@@ -148,7 +158,10 @@ def token_auth(token):
                 issuer="https://"+AUTH0_DOMAIN+"/"
             )
         except jwt.ExpiredSignatureError:
-            print('Expired Signature Error')
+            logging.error({
+                'message': 'Expired Signature Error',
+                'category': 'ERROR-EVE-AUTH'
+                })
             raise AuthError(
                 {
                     "code": "token_expired",
@@ -157,7 +170,10 @@ def token_auth(token):
                 401
             )
         except jwt.JWTClaimsError as claims:
-            print(claims)
+            logging.error({
+                'message': 'JWT Claims error',
+                'category': 'ERROR-EVE-AUTH',
+            }, exc_info=True)
             raise AuthError(
                 {
                     "code": "invalid_claims",
@@ -166,7 +182,10 @@ def token_auth(token):
                 401
             )
         except Exception as err:
-            print(err)
+            logging.error({
+                'message': 'Unspecified Auth Error',
+                'category': 'ERROR-EVE-AUTH'
+            }, exc_info=True)
             raise AuthError(
                 {
                     "code": "invalid_header",
@@ -183,7 +202,10 @@ def token_auth(token):
             )
 
             if not res.status_code == 200:
-                print("There was an error fetching user information")
+                logging.error({
+                    'message': "There was an error fetching user information",
+                    'category': 'EVE-ERROR-AUTH'
+                })
                 raise AuthError(
                     {
                         "code": "No_info",
@@ -194,6 +216,11 @@ def token_auth(token):
 
             payload['email'] = res.json()['email']
             _request_ctx_stack.top.current_user = payload
+            log = 'Authenticated user: ' + payload
+            logging.info({
+                'message': log,
+                'category': 'EVE-LOGIN'
+            })
             return True
         else:
             payload['email'] = "taskmanager-client"
@@ -210,7 +237,8 @@ def token_auth(token):
 
 @APP.after_request
 def after_request(response):
-    """A function to add google path details to the response header when files are uploaded
+    """
+    A function to add google path details to the response header when files are uploaded
 
     Decorators:
 
@@ -239,7 +267,10 @@ def custom500(error):
         [type] -- [description]
     """
     try:
-        print(error.description)
+        logging.error({
+            'message': error.description,
+            'category': 'ERROR-EVE-500'
+        })
         return jsonify({'message': error.description}), 500
     except AttributeError:
         err_str = str(error)
@@ -250,6 +281,18 @@ def create_app():
     """
     Configures the eve app.
     """
+    # Configure Stackdriver logging.
+    APP.logger.setLevel(logging.INFO)
+    log_handler = logging.StreamHandler()
+    formatter = StackdriverJsonFormatter()
+    log_handler.setFormatter(formatter)
+    APP.logger.addHandler(log_handler)
+
+    APP.logger.info({
+        'message': 'LOGGER CONFIGURED',
+        'category': 'EVE-TEST-LOGGING'
+    })
+
     # Ingestion Hooks
     APP.on_updated_ingestion += hooks.process_data_upload
     APP.on_insert_ingestion += hooks.register_upload_job
@@ -268,3 +311,6 @@ def create_app():
 if __name__ == '__main__':
     create_app()
     APP.run(host='0.0.0.0', port=5000)
+
+if __name__ != '__main__':
+    create_app()

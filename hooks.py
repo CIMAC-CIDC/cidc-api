@@ -4,14 +4,15 @@ Hooks responsible for determining the endpoint behavior of the application.
 """
 import datetime
 import json
+import logging
 from typing import List
 from bson import json_util, ObjectId
 from flask import current_app as app, abort, _request_ctx_stack
 from kombu import Connection, Exchange, Producer
-from constants import RABBIT_MQ_ADDRESS, LOGGER
+from constants import RABBIT_MQ_ADDRESS
 
 
-def get_current_user() -> str:
+def get_current_user():
     """
     Gets the current user in the flask context
 
@@ -59,6 +60,11 @@ def register_upload_job(items: List[dict]) -> None:
     for record in items:
         record['start_time'] = datetime.datetime.now().isoformat()
         record['started_by'] = get_current_user()['email']
+        log = 'Upload job started by' + record['started_by']
+        logging.info({
+            'message': log,
+            'category': 'TRACK-EVE-RECORD'
+        })
         for data_item in record['files']:
             files.append(data_item)
             data_item['assay'] = ObjectId(data_item['assay'])
@@ -67,7 +73,10 @@ def register_upload_job(items: List[dict]) -> None:
     duplicate_filenames = find_duplicates(files)
 
     if duplicate_filenames:
-        print("Error, duplicate file, upload rejected")
+        logging.error({
+            'message': "Error, duplicate file, upload rejected",
+            'category': 'ERROR-EVE-REQUEST'
+            })
         abort(500, "Upload aborted, duplicate files found")
 
 
@@ -106,6 +115,15 @@ def serialize_objectids(items: List[dict]) -> None:
         record['assay'] = ObjectId(record['assay'])
         record['trial'] = ObjectId(record['trial'])
         record['processed'] = False
+        log = (
+            'Record ' +
+            record['file_name'] +
+            ' for trial ' + record['trial'] + ' in assay ' + record['assay'] +
+            'uploaded')
+        logging.info({
+            'message': log,
+            'category': 'INFO-EVE-DATA'
+        })
 
 
 # On insert analysis.
@@ -124,6 +142,15 @@ def register_analysis(items: List[dict]) -> None:
         }
         analysis['start_date'] = datetime.datetime.now().isoformat()
         analysis['started_by'] = get_current_user()['email']
+        log = (
+            'Analysis starrted for trial' +
+            analysis['trial'] + ' on assay ' + analysis['assay'] +
+            ' by ' + analysis['started_by']
+        )
+        logging.info({
+            'message': log,
+            'category': 'INFO-EVE-DATA'
+        })
 
 
 def start_celery_task(task: str, arguments: object, task_id: int) -> None:
@@ -194,7 +221,10 @@ def log_file_patched(items: List[dict]) -> None:
     """
     for item in items:
         message = "Google Upload for item: " + str(item) + " completed."
-        LOGGER.debug(message)
+        logging.info({
+            'message': message,
+            'category': 'INFO-EVE-DATA'
+            })
 
 
 def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
@@ -215,6 +245,18 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
 
     # Get current user.
     current_user = get_current_user()
+
+    # Log the request
+    log = (
+        'Data request made against resource ' +
+        resource + ' by user ' + current_user['email'] +
+        ' method: ' + request.method + ' request structure: ' + request.url
+    )
+    logging.info({
+        'message': log,
+        'category': 'INFO-EVE-REQUEST'
+    })
+
     # If the caller is a service, not a user, no need for filters.
     if 'gty' in current_user and current_user['gty'] == 'client-credentials':
         return
@@ -240,6 +282,9 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
             else:
                 trial_ids = [str(x['_id']) for x in trials]
                 lookup['trial'] = {'$in': trial_ids}
-    except TypeError as err:
-        print(err)
+    except TypeError:
+        logging.error({
+            'message': 'Error applying filters',
+            'category': 'ERROR-EVE-REQUEST'
+        }, exc_info=True)
         abort(500, "There was an error processing your viewable data.")
