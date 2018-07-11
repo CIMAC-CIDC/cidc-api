@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 requests = "*"
 python-jose = "*"
-kombu = "*"
+kombu = "==4.1.0"
 bson = "*"
 Flask = "*"
 Flask-OAuthlib = "==0.9.4"

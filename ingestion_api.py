@@ -288,6 +288,11 @@ def create_app():
     log_handler.setFormatter(formatter)
     APP.logger.addHandler(log_handler)
 
+    APP.logger.info({
+        'message': 'LOGGER CONFIGURED',
+        'category': 'EVE-TEST-LOGGING'
+    })
+
     # Ingestion Hooks
     APP.on_updated_ingestion += hooks.process_data_upload
     APP.on_insert_ingestion += hooks.register_upload_job
@@ -306,3 +311,6 @@ def create_app():
 if __name__ == '__main__':
     create_app()
     APP.run(host='0.0.0.0', port=5000)
+
+if __name__ != '__main__':
+    create_app()
