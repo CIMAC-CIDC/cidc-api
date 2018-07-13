@@ -5,7 +5,8 @@ Schema for users of the database.
 
 DB_USER = {
     'public_methods': [],
-    'resource_methods': ['GET', 'POST', 'DELETE', 'PATCH'],
+    'resource_methods': ['GET', 'POST', 'DELETE'],
+    'item_methods': ['GET', 'PATCH', 'DELETE'],
     'allowed_roles': ['admin'],
     'cache_control': '',
     'cache_expires': 0,
