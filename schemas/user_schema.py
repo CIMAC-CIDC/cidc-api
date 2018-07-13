@@ -5,15 +5,21 @@ Schema for users of the database.
 
 DB_USER = {
     'public_methods': [],
-    'resource_methods': ['GET', 'POST'],
+    'resource_methods': ['GET', 'POST', 'DELETE', 'PATCH'],
     'allowed_roles': ['admin'],
+    'cache_control': '',
+    'cache_expires': 0,
     'schema': {
         'username': {
             'type': 'string',
+            'required': True,
+            'unique': True
         },
         'e-mail': {
             'type': 'string',
             'regex': r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
+            'required': True,
+            'unique': True
         },
         'organization': {
             'type': 'string',
@@ -23,9 +29,11 @@ DB_USER = {
         },
         'first_n': {
             'type': 'string',
+            'required': True
         },
         'last_n': {
             'type': 'string',
+            'required': True
         },
         'role': {
             'type': 'string',

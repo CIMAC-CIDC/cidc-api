@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Module that stores the record validators for eve.
 """
@@ -5,13 +6,14 @@ from schemas.coercers import FLOAT_COERCER as float_coercer, INT_COERCER as int_
 
 
 def create_biomarker_schema(schema: dict) -> dict:
-    """[summary]
+    """
+    Factory method for creating a schema object.
 
     Arguments:
-        schema {[type]} -- [description]
+        schema {dict} -- Cerberus schema dictionary.
 
     Returns:
-        [type] -- [description]
+        dict -- EVE endpoint definition.
     """
     base_dict = {
         'public_methods': [],

@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-This file defines the basic behavior of the eve application.
-
-Users upload files to the google bucket, and then run cromwell jobs on them
+Configures and runs the API.
 """
 import json
 import logging
+from typing import List
 from urllib.request import urlopen
 import requests
 from jose import jwt
@@ -42,7 +41,9 @@ class BearerAuth(TokenAuth):
             resource {string} -- Endpoint being accessed.
             method {[type]} -- [description]
         """
-        return token_auth(token)
+        email = token_auth(token)
+        role = role_auth(email, allowed_roles)
+        return email and role
 
 
 APP = Eve(
@@ -57,7 +58,7 @@ APP.debug = False
 # Format error response and append status code.
 class AuthError(Exception):
     """
-    [summary]
+    Specifies an error processing the user's token.
 
     Arguments:
         Exception {[type]} -- [description]
@@ -98,6 +99,25 @@ AUTH0 = OAUTH.remote_app(
 )
 
 
+def role_auth(email: str, allowed_roles: List[str]) -> dict:
+    """
+    Checks to make sure the person's role authorizes them to access an endpoint.
+
+    Arguments:
+        email {str} -- User's email.
+        allowed_roles {List[str]} -- List of allowed roles for the resource.
+
+    Returns:
+        dict -- User's account if found.
+    """
+    accounts = APP.data.driver.db['accounts']
+    lookup = {'e-mail': email}
+    if allowed_roles:
+        lookup['role'] = {'$in': allowed_roles}
+    account = accounts.find_one(lookup)
+    return account
+
+
 def token_auth(token):
     """
     Checks if the supplied token is valid.
@@ -131,7 +151,7 @@ def token_auth(token):
     except jwt.JWTError:
         logging.error({
             'message': 'Biomarker upload failed',
-            'category': 'ERROR-CELERY'
+            'category': 'ERROR-CELERY-AUTH'
         }, exc_info=True)
 
     if not jwks:
@@ -172,7 +192,7 @@ def token_auth(token):
                 },
                 401
             )
-        except jwt.JWTClaimsError as claims:
+        except jwt.JWTClaimsError:
             logging.error({
                 'message': 'JWT Claims error',
                 'category': 'ERROR-EVE-AUTH',
@@ -184,7 +204,7 @@ def token_auth(token):
                 },
                 401
             )
-        except Exception as err:
+        except Exception:
             logging.error({
                 'message': 'Unspecified Auth Error',
                 'category': 'ERROR-EVE-AUTH'
@@ -207,7 +227,7 @@ def token_auth(token):
             if not res.status_code == 200:
                 logging.error({
                     'message': "There was an error fetching user information",
-                    'category': 'EVE-ERROR-AUTH'
+                    'category': 'ERROR-EVE-AUTH'
                 })
                 raise AuthError(
                     {
@@ -222,13 +242,13 @@ def token_auth(token):
             log = 'Authenticated user: ' + payload
             logging.info({
                 'message': log,
-                'category': 'EVE-LOGIN'
+                'category': 'FAIR-EVE-LOGIN'
             })
-            return True
+            return payload['email']
         else:
             payload['email'] = "taskmanager-client"
             _request_ctx_stack.top.current_user = payload
-            return True
+            return payload['email']
     raise AuthError(
         {
             "code": "invalid_header",
@@ -276,13 +296,17 @@ def custom500(error):
         })
         return jsonify({'message': error.description}), 500
     except AttributeError:
+        logging.error({
+            'message': 'Attribute error in error format',
+            'category': 'ERROR-EVE-ERRORHANDLER'
+        }, exc_info=True)
         err_str = str(error)
         return jsonify({'message': err_str}), 500
 
 
 def configure_logging():
     """
-    Configures the loghandlers.
+    Configures the loghandler to send formatted logs to stackdriver.
     """
     # Configure Stackdriver logging.
     logger = logging.getLogger()
@@ -292,7 +316,7 @@ def configure_logging():
     logger.addHandler(log_handler)
     logging.info({
         'message': 'LOGGER CONFIGURED',
-        'category': 'EVE-TEST-LOGGING'
+        'category': 'INFO-EVE-LOGGING'
     })
 
 
@@ -321,5 +345,5 @@ if __name__ == '__main__':
     APP.run(host='0.0.0.0', port=5000)
 
 if __name__ != '__main__':
-    add_hooks()
     configure_logging()
+    add_hooks()

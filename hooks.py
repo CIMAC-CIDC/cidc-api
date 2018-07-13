@@ -63,9 +63,14 @@ def register_upload_job(items: List[dict]) -> None:
         log = 'Upload job started by' + record['started_by']
         logging.info({
             'message': log,
-            'category': 'TRACK-EVE-RECORD'
+            'category': 'FAIR-EVE-RECORD'
         })
         for data_item in record['files']:
+            item_log = 'Concerning trial: ' + data_item['trial'] + 'On Assay: ' + data_item['assay']
+            logging.info({
+                'message': item_log,
+                'category': 'FAIR-EVE-RECORD'
+            })
             files.append(data_item)
             data_item['assay'] = ObjectId(data_item['assay'])
             data_item['trial'] = ObjectId(data_item['trial'])
