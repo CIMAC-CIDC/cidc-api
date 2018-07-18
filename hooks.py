@@ -58,7 +58,7 @@ def register_upload_job(items: List[dict]) -> None:
     """
     files = []
     for record in items:
-        record['start_time'] = datetime.datetime.now().isoformat()
+        record['start_time'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         record['started_by'] = get_current_user()['email']
         log = 'Upload job started by' + record['started_by']
         logging.info({
@@ -108,6 +108,33 @@ def check_for_analysis(items: List[dict]) -> None:
     )
 
 
+# Pre-post account
+def user_create(resource, request, lookup):
+    """
+    Hook for posts to user endpoint, logs creation of user.
+
+    Arguments:
+        resource {[type]} -- [description]
+        request {[type]} -- [description]
+        lookup {[type]} -- [description]
+    """
+    args = request.form
+    log = 'New user created,\n'
+    for field in args:
+        log += field + ' : ' + args[field] + "\n"
+    logging.info({
+        'message': log,
+        'category': 'FAIR-EVE-NEWUSER'
+    })
+
+
+# On patch trial
+def patch_user_access():
+    # When a trial object is patched, if it affects the users, call celery tasks 
+    # to alter permissions based on the nature of the change.
+    pass
+
+
 # On insert data.
 def serialize_objectids(items: List[dict]) -> None:
     """
@@ -145,7 +172,7 @@ def register_analysis(items: List[dict]) -> None:
             'progress': 'In Progress',
             'message': ''
         }
-        analysis['start_date'] = datetime.datetime.now().isoformat()
+        analysis['start_date'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         analysis['started_by'] = get_current_user()['email']
         log = (
             'Analysis starrted for trial' +

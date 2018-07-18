@@ -16,11 +16,36 @@ AUTH0_DOMAIN = env.get('AUTH0_DOMAIN')
 AUTH0_AUDIENCE = env.get('AUTH0_AUDIENCE')
 ALGORITHMS = ["RS256"]
 RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
+GOOGLE_URL = env.get('GOOGLE_URL')
+GOOGLE_FOLDER_PATH = env.get('GOOGLE_FOLDER_PATH')
+# Default credentials for a local mongodb, do NOT use for production
+MONGO_HOST = 'localhost'
+MONGO_PORT = 27017
+# MONGO_USERNAME = 'python-eve'
+# MONGO_PASSWORD = 'apple'
+MONGO_DBNAME = 'CIDC'
+MONGO_OPTIONS = None
+MONGO_URI = None
 
 if env.get('IN_CLOUD'):
+    MONGO_OPTIONS = {
+        'connect': True,
+        'tz_aware': True,
+        'appname': 'flask_app_name',
+    }
+    MONGO_URI = env.get('MONGO_URI')
+    # MONGO_USERNAME = env.get('MONGO_USERNAME')
+    # MONGO_PASSWORD = env.get('MONGO_PASSWORD')
+    MONGO_DBNAME = env.get('MONGO_DBNAME')
+    if (env.get('MONGO_PORT')):
+        MONGO_PORT = int(env.get('MONGO_PORT'))
     RABBIT_MQ_ADDRESS = (
         'amqp://' + env.get('RABBITMQ_SERVICE_HOST') + ':' + env.get('RABBITMQ_SERVICE_PORT')
     )
 
-if AUTH0_AUDIENCE is '':
+if env.get('JENKINS'):
+    MONGO_URI = env.get('MONGO_URI_JENKINS')
+    MONGO_DBNAME = env.get('MONGO_URI_JENKINS')
+
+if AUTH0_AUDIENCE == '':
     AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'

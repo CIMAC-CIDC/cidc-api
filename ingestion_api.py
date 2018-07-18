@@ -2,6 +2,7 @@
 """
 Configures and runs the API.
 """
+import datetime
 import json
 import logging
 from typing import List
@@ -33,7 +34,9 @@ class BearerAuth(TokenAuth):
         BasicAuth {[type]} -- [description]
     """
     def check_auth(self, token, allowed_roles, resource, method):
-        """[summary]
+        """
+        Validates the user's token and ensures that they have the appropriate validation to use
+        the given endpoint.
 
         Arguments:
             token {dict} -- JWT token.
@@ -71,7 +74,7 @@ class AuthError(Exception):
 @APP.errorhandler(AuthError)
 def handle_auth_error(ex):
     """
-    [summary]
+    Error handler for token related errors.
 
     Arguments:
         ex {[type]} -- [description]
@@ -114,7 +117,29 @@ def role_auth(email: str, allowed_roles: List[str]) -> dict:
     lookup = {'e-mail': email}
     if allowed_roles:
         lookup['role'] = {'$in': allowed_roles}
+        log = 'User: ' + email + ' last login updated'
+        logging.info({
+            'message': log,
+            'category': 'FAIR-EVE-LOGIN'
+        })
     account = accounts.find_one(lookup)
+
+    # If account found, update last access.
+    if account:
+        log = 'user roles match scope, accepted: ' + email
+        logging.info({
+            'message': log,
+            'category': 'FAIR-EVE-LOGIN'
+        })
+        accounts.update(
+            {'_id': account['_id']},
+            {'$set': {'last_login': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
+    else:
+        log = 'failed permissions check for: ' + email
+        logging.info({
+            'message': log,
+            'category': 'FAIR-EVE-LOGIN'
+        })
     return account
 
 
@@ -126,9 +151,6 @@ def token_auth(token):
         token {[type]} -- [description]
 
     Raises:
-        AuthError -- [description]
-        AuthError -- [description]
-        AuthError -- [description]
         AuthError -- [description]
 
     Returns:
@@ -239,7 +261,7 @@ def token_auth(token):
 
             payload['email'] = res.json()['email']
             _request_ctx_stack.top.current_user = payload
-            log = 'Authenticated user: ' + payload
+            log = 'Authenticated user: ' + payload['email']
             logging.info({
                 'message': log,
                 'category': 'FAIR-EVE-LOGIN'
