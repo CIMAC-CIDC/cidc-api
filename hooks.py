@@ -32,7 +32,7 @@ def find_duplicates(items: List[dict]) -> List[str]:
         items {[dict]} -- Data records
 
     Returns:
-        [str] - List of duplicate filenames.
+        [str] -- List of duplicate filenames.
     """
     query = {'$or': []}
 
@@ -58,14 +58,20 @@ def register_upload_job(items: List[dict]) -> None:
     """
     files = []
     for record in items:
-        record['start_time'] = datetime.datetime.now().isoformat()
+        record['start_time'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         record['started_by'] = get_current_user()['email']
         log = 'Upload job started by' + record['started_by']
         logging.info({
             'message': log,
-            'category': 'TRACK-EVE-RECORD'
+            'category': 'FAIR-EVE-RECORD'
         })
         for data_item in record['files']:
+            item_log = (
+                'Concerning trial: ' + data_item['trial'] + 'On Assay: ' + data_item['assay'])
+            logging.info({
+                'message': item_log,
+                'category': 'FAIR-EVE-RECORD'
+            })
             files.append(data_item)
             data_item['assay'] = ObjectId(data_item['assay'])
             data_item['trial'] = ObjectId(data_item['trial'])
@@ -101,6 +107,43 @@ def check_for_analysis(items: List[dict]) -> None:
         [items],
         91011
     )
+
+
+# On-inserted user.
+def log_user_create(items: List[dict]) -> None:
+    """
+    Hook for posts to user endpoint, logs creation of user.
+
+    Arguments:
+        items {[dict]} -- List of user records inserted.
+    """
+    for new_user in items:
+        for key in new_user:
+            log = 'New user created'
+            log += ', ' + key + ' : ' + new_user[key]
+            logging.info({
+                'message': log,
+                'category': 'FAIR-EVE-NEWUSER'
+            })
+
+
+# On update trial
+def patch_user_access(updates: dict, original: dict) -> None:
+    """
+    When a trial object is updated, if the list of collaborators changes,
+    propagates the changes to modify google storage permissions.
+
+    Arguments:
+        updates {dict} -- Updates to trial object.
+        original {dict} -- Original record.
+    """
+    if 'collaborators' in updates:
+        n_col = updates['collaborators']
+        start_celery_task(
+            'framework.tasks.administrative_tasks.update_trial_blob_acl',
+            [original['_id'], n_col],
+            7889
+        )
 
 
 # On insert data.
@@ -140,7 +183,7 @@ def register_analysis(items: List[dict]) -> None:
             'progress': 'In Progress',
             'message': ''
         }
-        analysis['start_date'] = datetime.datetime.now().isoformat()
+        analysis['start_date'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         analysis['started_by'] = get_current_user()['email']
         log = (
             'Analysis starrted for trial' +

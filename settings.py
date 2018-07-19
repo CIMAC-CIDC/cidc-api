@@ -2,7 +2,17 @@
 """
 Settings file that lays out the database schema, as well as other constant variables.
 """
-from os import environ as env
+from constants import (
+    MONGO_HOST,
+    MONGO_PORT,
+    # MONGO_USERNAME,
+    # MONGO_PASSWORD,
+    MONGO_DBNAME,
+    MONGO_URI,
+    MONGO_OPTIONS,
+    GOOGLE_URL,
+    GOOGLE_FOLDER_PATH
+)
 from schemas.MAF_data_model import MAF
 from schemas.hla_schema import HLA
 from schemas.neoantigen_schema import NEOANTIGEN
@@ -11,33 +21,17 @@ from schemas.clonality_schema import CLONALITY_CLUSTER, LOCI, PYCLONE
 from schemas.cnv_schema import CNV
 from schemas.clinical_data_schema import CLINICAL_1021
 from schemas.rsem_schema import RSEM_EXPRESSION, RSEM_ISOFORMS
+from schemas.user_schema import DB_USER
 
-MONGO_HOST = 'localhost'
-MONGO_PORT = 27017
-MONGO_REPLICA_SET = None
-MONGO_USERNAME = 'python-eve'
-MONGO_PASSWORD = 'apple'
-MONGO_DBNAME = 'CIDC'
-
-if env.get('IN_CLOUD'):
-    MONGO_URI = "mongodb://mongo-0.mongo,mongo-1.mongo,mongo-2.mongo:27017/CIDC?replicaSet=rs0"
-    MONGO_OPTIONS = {
-        'connect': True,
-        'tz_aware': True,
-        'appname': 'flask_app_name',
-    }
-
-if env.get('JENKINS'):
-    MONGO_URI = (
-        "mongodb://mongo-0.mongo.default.svc.cluster.local," +
-        "mongo-1.mongo.default.svc.cluster.local," +
-        "mongo-2.mongo.default.svc.cluster.local" +
-        ":27017/TEST?replicaSet=rs0"
-        )
-    MONGO_DBNAME = "TEST"
-
-GOOGLE_URL = "gs://lloyd-test-pipeline/"
-GOOGLE_FOLDER_PATH = "Experimental-Data/"
+MONGO_HOST = MONGO_HOST
+MONGO_PORT = MONGO_PORT
+# MONGO_USERNAME = MONGO_USERNAME
+# MONGO_PASSWORD = MONGO_PASSWORD
+MONGO_DBNAME = MONGO_DBNAME
+MONGO_URI = MONGO_URI
+MONGO_OPTIONS = MONGO_OPTIONS
+GOOGLE_URL = GOOGLE_URL
+GOOGLE_FOLDER_PATH = GOOGLE_FOLDER_PATH
 
 
 # If this line is missing API will default to GET only
@@ -422,5 +416,6 @@ DOMAIN = {
     'cnv': CNV,
     'clinical_data': CLINICAL_1021,
     'rsem_expression': RSEM_EXPRESSION,
-    'rsem_isoforms': RSEM_ISOFORMS
+    'rsem_isoforms': RSEM_ISOFORMS,
+    'accounts': DB_USER
 }
