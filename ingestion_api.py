@@ -22,7 +22,9 @@ import hooks
 from constants import (
     AUTH0_AUDIENCE,
     AUTH0_CLIENT_ID,
-    AUTH0_CLIENT_SECRET, AUTH0_DOMAIN, ALGORITHMS
+    AUTH0_CLIENT_SECRET,
+    AUTH0_DOMAIN,
+    ALGORITHMS
 )
 
 
@@ -242,7 +244,7 @@ def token_auth(token):
         # Get user e-mail from userinfo endpoint.
         if 'gty' not in payload:
             res = requests.get(
-                'https://cidc-test.auth0.com/userinfo',
+                'https://' + AUTH0_DOMAIN + 'userinfo',
                 headers={"Authorization": 'Bearer {}'.format(token)}
             )
 

@@ -9,16 +9,18 @@ ENV_FILE = find_dotenv()
 if ENV_FILE:
     load_dotenv(ENV_FILE)
 
+AUTH0_AUDIENCE = env.get('AUTH0_AUDIENCE')
 AUTH0_CALLBACK_URL = env.get('AUTH0_CALLBACK_URL')
 AUTH0_CLIENT_ID = env.get('AUTH0_CLIENT_ID')
 AUTH0_CLIENT_SECRET = env.get('AUTH0_CLIENT_SECRET')
 AUTH0_DOMAIN = env.get('AUTH0_DOMAIN')
-AUTH0_AUDIENCE = env.get('AUTH0_AUDIENCE')
 ALGORITHMS = ["RS256"]
-RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
+
 GOOGLE_URL = env.get('GOOGLE_URL')
 GOOGLE_FOLDER_PATH = env.get('GOOGLE_FOLDER_PATH')
+RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
 # Default credentials for a local mongodb, do NOT use for production
+
 MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
 # MONGO_USERNAME = 'python-eve'
