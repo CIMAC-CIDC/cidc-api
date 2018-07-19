@@ -22,7 +22,7 @@ import hooks
 from constants import (
     AUTH0_AUDIENCE,
     AUTH0_CLIENT_ID,
-    AUTH0_CLIENT_SECRET, AUTH0_DOMAIN, ALGORITHMS
+    AUTH0_CLIENT_SECRET, AUTH0_DOMAIN, ALGORITHMS, AUTH0_PORTAL_AUDIENCE
 )
 
 
@@ -149,12 +149,25 @@ def token_auth(token):
                 "e": key["e"]
             }
     if rsa_key:
+
+        # Extract audience and see if it's either the
+        # ingestion APIs audience or the Portal's.
+        # This enables us to validate portal's tokens.
+        jwt_aud = jwt.get_unverified_claims(token)["aud"]
+
+        audience_to_verify = AUTH0_AUDIENCE
+        request_from_portal = False
+
+        if AUTH0_PORTAL_AUDIENCE is not None and jwt_aud == AUTH0_PORTAL_AUDIENCE:
+            audience_to_verify = AUTH0_PORTAL_AUDIENCE
+            request_from_portal = True
+
         try:
             payload = jwt.decode(
                 token,
                 rsa_key,
                 algorithms=ALGORITHMS,
-                audience=AUTH0_AUDIENCE,
+                audience=audience_to_verify,
                 issuer="https://"+AUTH0_DOMAIN+"/"
             )
         except jwt.ExpiredSignatureError:
@@ -195,7 +208,17 @@ def token_auth(token):
             )
 
         # Get user e-mail from userinfo endpoint.
-        if 'gty' not in payload:
+        if request_from_portal:
+            _request_ctx_stack.top.current_user = payload
+
+            log = 'Authenticated user: ' + payload["email"]
+            logging.info({
+                'message': log,
+                'category': 'EVE-LOGIN'
+            })
+
+            return True
+        elif 'gty' not in payload:
             res = requests.get(
                 'https://cidc-test.auth0.com/userinfo',
                 headers={"Authorization": 'Bearer {}'.format(token)}
