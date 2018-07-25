@@ -122,28 +122,26 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
 
     if allowed_roles:
         lookup['role'] = {'$in': allowed_roles}
-        log = 'User: ' + email + ' last login updated'
-        logging.info({
-            'message': log,
-            'category': 'FAIR-EVE-LOGIN'
-        })
 
     account = accounts.find_one(lookup)
 
     # If account found, update last access.
     if account:
-        log = 'user roles match scope, accepted: ' + email
+        log = 'user roles for resource (%s) match scope, accepted: %s' % (resource, email)
         logging.info({
             'message': log,
             'category': 'FAIR-EVE-LOGIN'
         })
 
-        # Don't change the account record before we send it an update.
-        # This would cause the etag to change and the update fails.
-        if not resource == "accounts" and not method == "PATCH":
-            accounts.update(
-                {'_id': account['_id']},
-                {'$set': {'last_login': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
+        accounts.update(
+            {'_id': account['_id']},
+            {'$set': {'last_login': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
+
+        log = 'User: ' + email + ' last login updated'
+        logging.info({
+            'message': log,
+            'category': 'FAIR-EVE-LOGIN'
+        })
     else:
         log = 'failed permissions check for: ' + email
         logging.info({
