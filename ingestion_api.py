@@ -47,7 +47,7 @@ class BearerAuth(TokenAuth):
             method {[type]} -- [description]
         """
         email = token_auth(token)
-        role = role_auth(email, allowed_roles)
+        role = role_auth(email, allowed_roles, resource)
         return email and role
 
 
@@ -104,7 +104,7 @@ AUTH0 = OAUTH.remote_app(
 )
 
 
-def role_auth(email: str, allowed_roles: List[str]) -> dict:
+def role_auth(email: str, allowed_roles: List[str], resource: str) -> dict:
     """
     Checks to make sure the person's role authorizes them to access an endpoint.
 
@@ -133,9 +133,10 @@ def role_auth(email: str, allowed_roles: List[str]) -> dict:
             'message': log,
             'category': 'FAIR-EVE-LOGIN'
         })
-        accounts.update(
-            {'_id': account['_id']},
-            {'$set': {'last_login': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
+        if not resource == "accounts":
+            accounts.update(
+                {'_id': account['_id']},
+                {'$set': {'last_login': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
     else:
         log = 'failed permissions check for: ' + email
         logging.info({
@@ -270,7 +271,7 @@ def token_auth(token):
             })
             return payload['email']
         else:
-            payload['email'] = "taskmanager-client"
+            payload['email'] = "celery-taskmanager"
             _request_ctx_stack.top.current_user = payload
             return payload['email']
     raise AuthError(
@@ -313,12 +314,13 @@ def custom500(error):
     Returns:
         [type] -- [description]
     """
-    try:
+    try: 
+        errorlog = str(error)
         logging.error({
-            'message': error.description,
+            'message': errorlog,
             'category': 'ERROR-EVE-500'
         })
-        return jsonify({'message': error.description}), 500
+        return jsonify({'message': str(error)}), 500
     except AttributeError:
         logging.error({
             'message': 'Attribute error in error format',
@@ -348,6 +350,12 @@ def add_hooks():
     """
     Adds the endpoint hooks to the application object.
     """
+    # Trial Hooks
+    APP.on_update_trial += hooks.patch_user_access
+
+    # Accounts hooks
+    APP.on_accounts_inserted += hooks.log_user_create
+
     # Ingestion Hooks
     APP.on_updated_ingestion += hooks.process_data_upload
     APP.on_insert_ingestion += hooks.register_upload_job
@@ -361,6 +369,7 @@ def add_hooks():
 
     # Pre get filter hook.
     APP.on_pre_GET += hooks.filter_on_id
+
 
 
 if __name__ == '__main__':

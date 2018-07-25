@@ -2,17 +2,10 @@
 """
 Settings file that lays out the database schema, as well as other constant variables.
 """
-from constants import (
-    MONGO_HOST,
-    MONGO_PORT,
-    # MONGO_USERNAME,
-    # MONGO_PASSWORD,
-    MONGO_DBNAME,
-    MONGO_URI,
-    MONGO_OPTIONS,
-    GOOGLE_URL,
-    GOOGLE_FOLDER_PATH
-)
+import urllib.parse
+import logging
+from os import environ as env
+from dotenv import find_dotenv, load_dotenv
 from schemas.MAF_data_model import MAF
 from schemas.hla_schema import HLA
 from schemas.neoantigen_schema import NEOANTIGEN
@@ -23,16 +16,61 @@ from schemas.clinical_data_schema import CLINICAL_1021
 from schemas.rsem_schema import RSEM_EXPRESSION, RSEM_ISOFORMS
 from schemas.user_schema import DB_USER
 
-MONGO_HOST = MONGO_HOST
-MONGO_PORT = MONGO_PORT
-# MONGO_USERNAME = MONGO_USERNAME
-# MONGO_PASSWORD = MONGO_PASSWORD
-MONGO_DBNAME = MONGO_DBNAME
-MONGO_URI = MONGO_URI
-MONGO_OPTIONS = MONGO_OPTIONS
-GOOGLE_URL = GOOGLE_URL
-GOOGLE_FOLDER_PATH = GOOGLE_FOLDER_PATH
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
 
+AUTH0_AUDIENCE = env.get('AUTH0_AUDIENCE')
+AUTH0_CALLBACK_URL = env.get('AUTH0_CALLBACK_URL')
+AUTH0_CLIENT_ID = env.get('AUTH0_CLIENT_ID')
+AUTH0_CLIENT_SECRET = env.get('AUTH0_CLIENT_SECRET')
+AUTH0_DOMAIN = env.get('AUTH0_DOMAIN')
+ALGORITHMS = ["RS256"]
+
+GOOGLE_URL = env.get('GOOGLE_URL')
+GOOGLE_FOLDER_PATH = env.get('GOOGLE_FOLDER_PATH')
+RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
+# Default credentials for a local mongodb, do NOT use for production
+
+MONGO_HOST = 'localhost'
+MONGO_PORT = 27017
+MONGO_USERNAME = 'python-eve'
+MONGO_PASSWORD = 'apple'
+MONGO_DBNAME = 'CIDC'
+MONGO_OPTIONS = None
+
+print('Either way')
+
+if not env.get('IN_CLOUD'):
+    logging.info({
+        'message': 'notincloud',
+        'category': 'INFO-EVE-DEBUG'
+    })
+
+if env.get('IN_CLOUD'):
+    MONGO_OPTIONS = {
+        'connect': True,
+        'tz_aware': True,
+        'appname': 'flask_app_name',
+    }
+    MONGO_HOST = env.get('MONGO_HOST')
+    MONGO_USERNAME = urllib.parse.quote_plus(env.get('MONGO_USERNAME').strip())
+    MONGO_PASSWORD = urllib.parse.quote_plus(env.get('MONGO_PASSWORD').strip())
+    MONGO_DBNAME = env.get('MONGO_DBNAME')
+    MONGO_AUTH_SOURCE = env.get('MONGO_AUTH_SOURCE')
+    MONGO_REPLICA_SET = env.get('MONGO_REPLICA_SET')
+    if env.get('MONGO_PORT'):
+        MONGO_PORT = int(env.get('MONGO_PORT'))
+    RABBIT_MQ_ADDRESS = (
+        'amqp://' + env.get('RABBITMQ_SERVICE_HOST') + ':' + env.get('RABBITMQ_SERVICE_PORT')
+    )
+
+if env.get('JENKINS'):
+    MONGO_URI = env.get('MONGO_URI_JENKINS')
+    MONGO_DBNAME = env.get('MONGO_URI_JENKINS')
+
+if AUTH0_AUDIENCE == '':
+    AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
 
 # If this line is missing API will default to GET only
 RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
