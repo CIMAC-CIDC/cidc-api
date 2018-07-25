@@ -21,7 +21,7 @@ from schemas.clonality_schema import CLONALITY_CLUSTER, LOCI, PYCLONE
 from schemas.cnv_schema import CNV
 from schemas.clinical_data_schema import CLINICAL_1021
 from schemas.rsem_schema import RSEM_EXPRESSION, RSEM_ISOFORMS
-from schemas.user_schema import DB_USER
+from schemas.user_schema import DB_USER, DB_ACCOUNTS_INFO, DB_ACCOUNTS_UPDATE
 
 MONGO_HOST = MONGO_HOST
 MONGO_PORT = MONGO_PORT
@@ -417,5 +417,7 @@ DOMAIN = {
     'clinical_data': CLINICAL_1021,
     'rsem_expression': RSEM_EXPRESSION,
     'rsem_isoforms': RSEM_ISOFORMS,
-    'accounts': DB_USER
+    'accounts': DB_USER,
+    'accounts_info': DB_ACCOUNTS_INFO,
+    'accounts_update': DB_ACCOUNTS_UPDATE
 }
