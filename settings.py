@@ -39,7 +39,6 @@ MONGO_PASSWORD = 'apple'
 MONGO_DBNAME = 'CIDC'
 MONGO_OPTIONS = None
 
-print('Either way')
 
 if not env.get('IN_CLOUD'):
     logging.info({
