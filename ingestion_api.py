@@ -47,8 +47,9 @@ class BearerAuth(TokenAuth):
             resource {string} -- Endpoint being accessed.
             method {[type]} -- [description]
         """
+
         email = token_auth(token)
-        role = role_auth(email, allowed_roles, resource)
+        role = role_auth(email, allowed_roles, resource, method)
         return email and role
 
 
@@ -105,7 +106,7 @@ AUTH0 = OAUTH.remote_app(
 )
 
 
-def role_auth(email: str, allowed_roles: List[str], resource: str) -> dict:
+def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) -> dict:
     """
     Checks to make sure the person's role authorizes them to access an endpoint.
 
@@ -118,18 +119,15 @@ def role_auth(email: str, allowed_roles: List[str], resource: str) -> dict:
     """
     accounts = APP.data.driver.db['accounts']
     lookup = {'e-mail': email}
+
     if allowed_roles:
         lookup['role'] = {'$in': allowed_roles}
-        log = 'User: ' + email + ' last login updated'
-        logging.info({
-            'message': log,
-            'category': 'FAIR-EVE-LOGIN'
-        })
+
     account = accounts.find_one(lookup)
 
     # If account found, update last access.
     if account:
-        log = 'user roles match scope, accepted: ' + email
+        log = 'user roles for resource (%s) match scope, accepted: %s' % (resource, email)
         logging.info({
             'message': log,
             'category': 'FAIR-EVE-LOGIN'
@@ -138,6 +136,12 @@ def role_auth(email: str, allowed_roles: List[str], resource: str) -> dict:
             accounts.update(
                 {'_id': account['_id']},
                 {'$set': {'last_login': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
+
+            log = 'User: ' + email + ' last login updated'
+            logging.info({
+                'message': log,
+                'category': 'FAIR-EVE-LOGIN'
+            })
     else:
         log = 'failed permissions check for: ' + email
         logging.info({
@@ -145,6 +149,34 @@ def role_auth(email: str, allowed_roles: List[str], resource: str) -> dict:
             'category': 'FAIR-EVE-LOGIN'
         })
     return account
+
+
+def ensure_user_account_exists(email_address: str) -> None:
+    """
+    Take an e-mail address and verify an account exists with that username.
+    This is useful for novel signups that we can't check a role for yet,
+    because the account doesn't exist. Default the role and applicable dates.
+
+    :param email_address:
+    :return:
+    """
+    db_accounts = APP.data.driver.db['accounts']
+    lookup = {"username": email_address}
+    lookup_account = db_accounts.find_one(lookup)
+
+    if not lookup_account:
+        db_accounts.insert({"username": email_address,
+                            "e-mail": email_address,
+                            "account_create_date": datetime.datetime.now(
+                                datetime.timezone.utc).isoformat(),
+                            "role": "registrant",
+                            "registered": False})
+
+        log = 'Creating document in ACCOUNTS collection for username %s' % email_address
+        logging.info({
+            'message': log,
+            'category': 'INFO-EVE-LOGIN'
+        })
 
 
 def token_auth(token):
@@ -260,13 +292,15 @@ def token_auth(token):
         if request_from_portal:
             _request_ctx_stack.top.current_user = payload
 
+            ensure_user_account_exists(payload["email"])
+
             log = 'Authenticated user: ' + payload["email"]
             logging.info({
                 'message': log,
                 'category': 'EVE-LOGIN'
             })
 
-            return True
+            return payload['email']
         elif 'gty' not in payload:
             res = requests.get(
                 'https://' + AUTH0_DOMAIN + 'userinfo',
