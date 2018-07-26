@@ -132,16 +132,16 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
             'message': log,
             'category': 'FAIR-EVE-LOGIN'
         })
+        if not resource == "accounts":
+            accounts.update(
+                {'_id': account['_id']},
+                {'$set': {'last_login': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
 
-        accounts.update(
-            {'_id': account['_id']},
-            {'$set': {'last_login': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
-
-        log = 'User: ' + email + ' last login updated'
-        logging.info({
-            'message': log,
-            'category': 'FAIR-EVE-LOGIN'
-        })
+            log = 'User: ' + email + ' last login updated'
+            logging.info({
+                'message': log,
+                'category': 'FAIR-EVE-LOGIN'
+            })
     else:
         log = 'failed permissions check for: ' + email
         logging.info({
@@ -167,7 +167,8 @@ def ensure_user_account_exists(email_address: str) -> None:
     if not lookup_account:
         db_accounts.insert({"username": email_address,
                             "e-mail": email_address,
-                            "account_create_date": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                            "account_create_date": datetime.datetime.now(
+                                datetime.timezone.utc).isoformat(),
                             "role": "registrant",
                             "registered": False})
 
@@ -328,7 +329,7 @@ def token_auth(token):
             })
             return payload['email']
         else:
-            payload['email'] = "taskmanager-client"
+            payload['email'] = "celery-taskmanager"
             _request_ctx_stack.top.current_user = payload
             return payload['email']
     raise AuthError(
@@ -371,12 +372,13 @@ def custom500(error):
     Returns:
         [type] -- [description]
     """
-    try:
+    try: 
+        errorlog = str(error)
         logging.error({
-            'message': error.description,
+            'message': errorlog,
             'category': 'ERROR-EVE-500'
         })
-        return jsonify({'message': error.description}), 500
+        return jsonify({'message': str(error)}), 500
     except AttributeError:
         logging.error({
             'message': 'Attribute error in error format',
@@ -406,6 +408,12 @@ def add_hooks():
     """
     Adds the endpoint hooks to the application object.
     """
+    # Trial Hooks
+    APP.on_update_trial += hooks.patch_user_access
+
+    # Accounts hooks
+    APP.on_accounts_inserted += hooks.log_user_create
+
     # Ingestion Hooks
     APP.on_updated_ingestion += hooks.process_data_upload
     APP.on_insert_ingestion += hooks.register_upload_job
@@ -419,6 +427,7 @@ def add_hooks():
 
     # Pre get filter hook.
     APP.on_pre_GET += hooks.filter_on_id
+
 
 
 if __name__ == '__main__':
