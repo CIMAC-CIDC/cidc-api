@@ -312,6 +312,8 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
             lookup['collaborators'] = user_id
         elif resource == 'ingestion':
             lookup['started_by'] = user_id
+        elif resource in ['accounts_info', 'accounts_update'] and request.method == "GET":
+            lookup['username'] = user_id
         else:
             accounts = app.data.driver.db['trials']
             trials = accounts.find({'collaborators': user_id}, {'_id': 1, 'assays': 1})
