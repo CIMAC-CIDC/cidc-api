@@ -1,4 +1,4 @@
-![Build Status](http://35.196.130.201/jenk/buildStatus/icon?job=API%20Repo/master)
+[![Build Status](http://35.229.46.114/jenk/job/API%20Repo/job/master/badge/icon)](http://35.229.46.114/jenk/job/API%20Repo/job/master/)
 
 ## Ingestion API
 
@@ -34,5 +34,4 @@ to build the image.
     ├── __pycache__
     ├── test_ingestion_api.py
 ```
-
 
