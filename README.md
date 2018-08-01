@@ -1,4 +1,4 @@
-![Build Status](http://35.196.130.201/jenk/buildStatus/icon?job=API%20Repo/master)
+![Build Status](http://35.229.46.114/jenk/buildStatus/icon?job=API%20Repo/master)
 
 ## Ingestion API
 
