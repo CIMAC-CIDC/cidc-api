@@ -14,7 +14,10 @@ podTemplate(label: 'docker', namespace: 'jenkins',
                     sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
                 }
                 stage('Push to repo') {
-                    sh' docker push gcr.io/cidc-dfci/ingestion-api:staging'
+                    withCredentials([string(credentialsId: 'cidc-dfci', variable: 'GCLOUD_SVC_JSON')]) {
+                        sh 'docker login -u _json_key -p ${GCLOUD_SVC_JSON} https://gcr.io'
+                    }
+                    sh 'docker push gcr.io/cidc-dfci/ingestion-api:staging'
                 }
             }
         }
