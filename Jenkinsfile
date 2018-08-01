@@ -1,16 +1,22 @@
-def label = "worker-${UUID.randomUUID().toString()}"
-
-podTemplate(label: label, namespace: "jenkins", ttyEnabled: true, command: 'cat', containers: [
-    containerTemplate(
-        name: 'api',
-        image: 'undivideddocker/ingestion-api', ttyEnabled: true, command: 'cat', alwaysPullImage: true)
-]) {
-    node(label) {
-        stage('Run Unit Tests') {
-          container('api') {
-              checkout scm
-              sh 'nose2'
-          }
+podTemplate(label: 'docker', namespace: 'jenkins',
+    containers: [containerTemplate(image: 'docker', name: 'docker', command: 'cat', ttyEnabled: true)],
+    volumes: [hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock')]) {
+        node('docker') {
+            container('docker') {
+                sh 'docker --version'
+                stage('Check out SCM') {
+                    checkout scm
+                }
+                stage('Docker image build') {
+                    sh 'docker build -t ingestion-api .'
+                }
+                stage('Update staging') {
+                    sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
+                }
+                stage('Push to repo') {
+                    sh' docker push gcr.io/cidc-dfci/ingestion-api:staging'
+                }
+            }
         }
-    }
 }
+

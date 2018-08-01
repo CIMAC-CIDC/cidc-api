@@ -2,7 +2,6 @@
 """
 Settings file that lays out the database schema, as well as other constant variables.
 """
-import urllib.parse
 import logging
 from os import environ as env
 from dotenv import find_dotenv, load_dotenv
@@ -53,8 +52,8 @@ if env.get('IN_CLOUD'):
         'appname': 'flask_app_name',
     }
     MONGO_HOST = env.get('MONGO_HOST')
-    MONGO_USERNAME = urllib.parse.quote_plus(env.get('MONGO_USERNAME').strip())
-    MONGO_PASSWORD = urllib.parse.quote_plus(env.get('MONGO_PASSWORD').strip())
+    MONGO_USERNAME = env.get('MONGO_USERNAME').strip()
+    MONGO_PASSWORD = env.get('MONGO_PASSWORD').strip()
     MONGO_DBNAME = env.get('MONGO_DBNAME')
     MONGO_AUTH_SOURCE = env.get('MONGO_AUTH_SOURCE')
     MONGO_REPLICA_SET = env.get('MONGO_REPLICA_SET')
@@ -65,8 +64,8 @@ if env.get('IN_CLOUD'):
     )
 
 if env.get('JENKINS'):
-    MONGO_URI = env.get('MONGO_URI_JENKINS')
-    MONGO_DBNAME = env.get('MONGO_URI_JENKINS')
+    MONGO_HOST = env.get('MONGO_HOST_JENKINS')
+    MONGO_DBNAME = env.get('MONGO_DBNAME_JENKINS')
 
 if AUTH0_AUDIENCE == '':
     AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
