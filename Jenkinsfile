@@ -1,29 +1,54 @@
-podTemplate(label: 'docker', namespace: 'jenkins',
-    containers: [containerTemplate(image: 'docker', name: 'docker', command: 'cat', ttyEnabled: true)],
-    volumes: [hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock')]) {
-        node('docker') {
-            container('docker') {
-                sh 'docker --version'
-                stage('Check out SCM') {
+pipeline {
+    agent {
+        kubernetes {
+            label 'docker'
+            namespace: 'jenkins'
+            yaml """
+            apiVersion: v1
+            kind: Pod
+            spec:
+              containers:
+              - name: docker
+                image: docker:latest
+                command:
+                - cat
+                tty: true
+                volumeMounts:
+                  - mountPath: '/var/run/docker.sock'
+                    name: 'docker-volume'
+              volumes:
+                - hostPath:
+                    path: '/var/run/docker.sock'
+                    name: 'docker-volume'
+            """
+        }
+    }
+    environment {
+        GOOGLE_APPLICATION_CREDENTIALS = credentials('google-service-accounts')
+    }
+    stages {
+        stage('Checkout SCM') {
+            steps {
+                container('docker') {
                     checkout scm
-                }
-                stage('Docker image build') {
-                    sh 'docker build -t ingestion-api .'
-                }
-                
-                withCredentials([file(credentialsId: 'google-service-account', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                    stage('docker login') {
-                        sh 'cat ${GOOGLE_APPLICATION_CREDENTIALS} | docker login -u _json_key --password-stdin https://gcr.io'
-                    }
-                    stage('Update staging') {
-                        sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
-                    }
-                    stage('Push to repo') {
-                        sh 'docker push gcr.io/cidc-dfci/ingestion-api:staging'
-                    }
-                    
                 }
             }
         }
+        stage('Docker Login') {
+            steps {
+                container('docker') {
+                    sh 'cat ${GOOGLE_APPLICATION_CREDENTIALS} | docker login -u _json_key --password-stdin https://gcr.io'
+                }
+            }
+        }
+        stage('Docker Build') {
+            steps {
+                container('docker') {
+                    sh 'docker build -t ingestion-api .'
+                    sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
+                    sh 'docker push gcr.io/cidc-dfci/ingestion-api:staging'
+                }
+            }
+        }
+    }
 }
-
