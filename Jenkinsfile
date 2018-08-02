@@ -12,6 +12,9 @@ podTemplate(label: 'docker', namespace: 'jenkins',
                 }
                 
                 withCredentials([file(credentialsId: 'google-service-account', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    stage('docker login') {
+                        sh 'docker login -u _json_key -p ${GOOGLE_APPLICATION_CREDENTIALS} https://gcr.io'
+                    }
                     stage('Update staging') {
                         sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
                     }
