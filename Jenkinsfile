@@ -2,12 +2,12 @@ pipeline {
     agent {
         kubernetes {
             label 'docker'
-            namespace: 'jenkins'
             yaml """
             apiVersion: v1
             kind: Pod
+            namespace: jenkins
             spec:
-              containers:
+              containers:`
               - name: docker
                 image: docker:latest
                 command:
