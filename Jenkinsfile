@@ -14,7 +14,7 @@ podTemplate(label: 'docker', namespace: 'jenkins',
                 withCredentials([file(credentialsId: 'google-service-account', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     stage('docker login') {
                         sh '''
-                            curl -L "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v${VERSION}/docker-credential-gcr_linux_amd64-1.5.0.tar.gz" \
+                            curl -L "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v1.5.0/docker-credential-gcr_linux_amd64-1.5.0.tar.gz" \
                             | tar xz --to-stdout docker-credential-gcr \
                             > /usr/bin/docker-credential-gcr && chmod +x /usr/bin/docker-credential-gcr
                         '''
