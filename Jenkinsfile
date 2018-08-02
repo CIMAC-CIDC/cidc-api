@@ -14,12 +14,12 @@ spec:
     - cat
     tty: true
     volumeMounts:
-    - mountPath: '/var/run/docker.sock'
-      name: 'docker-volume'
+    - mountPath: /var/run/docker.sock
+      name: docker-volume
   volumes:
-  - hostPath:
-      path: '/var/run/docker.sock'
-      name: 'docker-volume'
+  - name: docker-volume
+    hostPath: 
+      path: /var/run/docker.sock
 """
     }
   }
