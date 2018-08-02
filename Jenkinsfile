@@ -7,7 +7,7 @@ pipeline {
             kind: Pod
             namespace: jenkins
             spec:
-              containers:`
+              containers:
               - name: docker
                 image: docker:latest
                 command:
