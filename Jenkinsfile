@@ -13,12 +13,7 @@ podTemplate(label: 'docker', namespace: 'jenkins',
                 
                 withCredentials([file(credentialsId: 'google-service-account', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                     stage('docker login') {
-                        sh '''
-                            curl -L "https://github.com/GoogleCloudPlatform/docker-credential-gcr/releases/download/v1.5.0/docker-credential-gcr_linux_amd64-1.5.0.tar.gz" \
-                            | tar xz --to-stdout docker-credential-gcr \
-                            > /usr/bin/docker-credential-gcr && chmod +x /usr/bin/docker-credential-gcr
-                        '''
-                        sh 'docker-credential-gcr configure-docker'
+                        sh 'cat ${GOOGLE_APPLICATION_CREDENTIALS} | docker login -u _json_key --password-stdin https://gcr.io'
                     }
                     stage('Update staging') {
                         sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
