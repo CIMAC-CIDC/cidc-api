@@ -21,34 +21,34 @@ spec:
       path: '/var/run/docker.sock'
       name: 'docker-volume'
 """
-        }
     }
-    environment {
-      GOOGLE_APPLICATION_CREDENTIALS = credentials('google-service-accounts')
-    }
-    stages {
-      stage('Checkout SCM') {
-        steps {
-          container('docker') {
-            checkout scm
-          }
-        }
-      }
-      stage('Docker Login') {
-        steps {
-          container('docker') {
-            sh 'cat ${GOOGLE_APPLICATION_CREDENTIALS} | docker login -u _json_key --password-stdin https://gcr.io'
-          }
-        }
-      }
-      stage('Docker Build') {
-        steps {
-          container('docker') {
-            sh 'docker build -t ingestion-api .'
-            sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
-            sh 'docker push gcr.io/cidc-dfci/ingestion-api:staging'
-          }
+  }
+  environment {
+      GOOGLE_APPLICATION_CREDENTIALS = credentials('google-service-account')
+  }
+  stages {
+    stage('Checkout SCM') {
+      steps {
+        container('docker') {
+          checkout scm
         }
       }
     }
+    stage('Docker login') {
+      steps {
+        container('docker') {
+          sh 'cat ${GOOGLE_APPLICATION_CREDENTIALS} | docker login -u _json_key --password-stdin https://gcr.io'
+        }
+      }
+    }
+    stage('Docker build') {
+      steps {
+        container('docker') {
+          sh 'docker build -t ingestion-api .'
+          sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
+          sh 'docker push gcr.io/cidc-dfci/ingestion-api:staging'
+        }
+      }
+    }
+  }
 }
