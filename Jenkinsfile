@@ -10,14 +10,15 @@ podTemplate(label: 'docker', namespace: 'jenkins',
                 stage('Docker image build') {
                     sh 'docker build -t ingestion-api .'
                 }
-                stage('Update staging') {
-                    sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
-                }
-                stage('Push to repo') {
-                    withCredentials([string(credentialsId: 'cidc-dfci', variable: 'GCLOUD_SVC_JSON')]) {
-                        sh 'docker login -u _json_key -p ${GCLOUD_SVC_JSON} https://gcr.io'
+                
+                withCredentials([file(credentialsId: '.google_auth.json', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    stage('Update staging') {
+                        sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
                     }
-                    sh 'docker push gcr.io/cidc-dfci/ingestion-api:staging'
+                    stage('Push to repo') {
+                        sh 'docker push gcr.io/cidc-dfci/ingestion-api:staging'
+                    }
+                    
                 }
             }
         }
