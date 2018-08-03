@@ -41,7 +41,22 @@ spec:
         }
       }
     }
-    stage('Docker build') {
+    stage('Docker build (master)') {
+      when {
+        branch 'master'
+      }
+      steps {
+        container('docker') {
+          sh 'docker build -t ingestion-api .'
+          sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:production'
+          sh 'docker push gcr.io/cidc-dfci/ingestion-api:production'
+        }
+      }
+    }
+    stage('Docker build (staging)') {
+      when {
+        branch 'staging'
+      }
       steps {
         container('docker') {
           sh 'docker build -t ingestion-api .'
