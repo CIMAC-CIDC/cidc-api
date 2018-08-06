@@ -30,6 +30,7 @@ spec:
   }
   environment {
       GOOGLE_APPLICATION_CREDENTIALS = credentials('google-service-account')
+      deploy = "${UUID.randomUUID().toString()}"
   }
   stages {
     stage('Checkout SCM') {
@@ -78,7 +79,6 @@ spec:
         container('helm') {
           sh 'helm init'
           sh 'helm repo add ${CIDC_CHARTMUSEUM_SERVICE_HOST}:${CIDC_CHARTMUSEUM_SERVICE_PORT} local'
-          def deploy = "${UUID.randomUUID().toString()}"
           sh 'helm upgrade ingestion-api local/ingestion-api --set deploy=${deploy}'
         }
       }
