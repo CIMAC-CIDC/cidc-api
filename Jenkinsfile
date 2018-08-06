@@ -16,6 +16,11 @@ spec:
     volumeMounts:
     - mountPath: /var/run/docker.sock
       name: docker-volume
+  - name: helm
+    image: lachlanevenson/k8s-helm
+    command:
+    - cat
+    tty: true
   volumes:
   - name: docker-volume
     hostPath: 
@@ -25,6 +30,7 @@ spec:
   }
   environment {
       GOOGLE_APPLICATION_CREDENTIALS = credentials('google-service-account')
+      deploy = "${UUID.randomUUID().toString()}"
   }
   stages {
     stage('Checkout SCM') {
@@ -67,6 +73,18 @@ spec:
         container('docker') {
           sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
           sh 'docker push gcr.io/cidc-dfci/ingestion-api:staging'
+        }
+      }
+    }
+    stage('Docker deploy (staging)') {
+      when {
+          branch 'staging'
+      }
+      steps {
+        container('helm') {
+          sh 'helm init'
+          sh 'helm repo add ${CIDC_CHARTMUSEUM_SERVICE_HOST}:${CIDC_CHARTMUSEUM_SERVICE_PORT} local'
+          sh 'helm upgrade ingestion-api local/ingestion-api --set deploy=${deploy}'
         }
       }
     }
