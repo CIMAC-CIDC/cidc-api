@@ -82,7 +82,7 @@ spec:
       }
       steps {
         container('helm') {
-          sh 'helm init --client-only'
+          sh 'helm init --client-only --service-account tiller'
           sh 'helm repo add cidc "http://${CIDC_CHARTMUSEUM_SERVICE_HOST}:${CIDC_CHARTMUSEUM_SERVICE_PORT}" '
           sh 'helm upgrade ingestion-api cidc/ingestion-api --set deploy=${deploy}'
         }
