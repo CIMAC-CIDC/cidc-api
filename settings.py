@@ -303,7 +303,8 @@ ASSAYS = {
 TRIALS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
-    'allowed_roles': ['user', 'admin', 'superuser'],
+    'allowed_read_roles': ['user'],
+    'allowed_roles': ['admin', 'superuser'],
     'allowed_filters': ['collaborators', 'principal_investigator', '_id', 'assays.assay_id'],
     'schema': {
         'trial_name': {
