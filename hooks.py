@@ -310,11 +310,13 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     # Logic for adding the appropriate filter based on the endpoint.
     try:
         if resource == 'trials':
-            lookup['collaborators'] = user_id
+            pass
         elif resource == 'ingestion':
             lookup['started_by'] = user_id
         elif resource in ['accounts_info', 'accounts_update'] and request.method == "GET":
             lookup['username'] = user_id
+        elif resource in ['accounts']:
+            pass
         else:
             accounts = app.data.driver.db['trials']
             trials = accounts.find({'collaborators': user_id}, {'_id': 1, 'assays': 1})
