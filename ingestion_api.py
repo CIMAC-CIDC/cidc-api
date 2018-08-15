@@ -298,7 +298,7 @@ def token_auth(token):
             return payload['email']
         elif 'gty' not in payload:
             res = requests.get(
-                'https://' + AUTH0_DOMAIN + 'userinfo',
+                'https://' + AUTH0_DOMAIN + '/userinfo',
                 headers={"Authorization": 'Bearer {}'.format(token)}
             )
 
