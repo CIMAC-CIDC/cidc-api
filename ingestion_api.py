@@ -7,26 +7,21 @@ import json
 import logging
 from typing import List
 from urllib.request import urlopen
+
 import requests
-from jose import jwt
+from cidc_utils.loghandler import StackdriverJsonFormatter
 from eve import Eve
 from eve.auth import TokenAuth
-from flask import (
-    current_app as APP,
-    jsonify,
-    _request_ctx_stack
-)
+from flask import _request_ctx_stack
+from flask import current_app as APP
+from flask import jsonify
 from flask_oauthlib.client import OAuth
-from cidc_utils.loghandler import StackdriverJsonFormatter
+from jose import jwt
+
 import hooks
-from constants import (
-    AUTH0_AUDIENCE,
-    AUTH0_CLIENT_ID,
-    AUTH0_CLIENT_SECRET,
-    AUTH0_DOMAIN,
-    ALGORITHMS,
-    AUTH0_PORTAL_AUDIENCE
-)
+from constants import (ALGORITHMS, AUTH0_AUDIENCE, AUTH0_CLIENT_ID,
+                       AUTH0_CLIENT_SECRET, AUTH0_DOMAIN,
+                       AUTH0_PORTAL_AUDIENCE)
 
 
 class BearerAuth(TokenAuth):
@@ -303,7 +298,7 @@ def token_auth(token):
             return payload['email']
         elif 'gty' not in payload:
             res = requests.get(
-                'https://' + AUTH0_DOMAIN + 'userinfo',
+                'https://' + AUTH0_DOMAIN + '/userinfo',
                 headers={"Authorization": 'Bearer {}'.format(token)}
             )
 
@@ -427,7 +422,6 @@ def add_hooks():
 
     # Pre get filter hook.
     APP.on_pre_GET += hooks.filter_on_id
-
 
 
 if __name__ == '__main__':

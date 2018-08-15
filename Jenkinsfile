@@ -1,8 +1,9 @@
 pipeline {
   agent {
     kubernetes {
-      label 'docker'
+      label 'helm-docker'
       defaultContainer 'jnlp'
+      serviceAccount 'helm'
       yaml """
 apiVersion: v1
 kind: Pod
@@ -82,9 +83,9 @@ spec:
       }
       steps {
         container('helm') {
-          sh 'helm init --service-account tiller'
+          sh 'helm init --client-only'
           sh 'helm repo add cidc "http://${CIDC_CHARTMUSEUM_SERVICE_HOST}:${CIDC_CHARTMUSEUM_SERVICE_PORT}" '
-          sh 'helm upgrade ingestion-api cidc/ingestion-api --set deploy=${deploy}'
+          sh 'helm upgrade ingestion-api cidc/ingestion-api --set deploy=${deploy} --set image.tag=staging'
         }
       }
     }
