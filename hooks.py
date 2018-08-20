@@ -67,7 +67,8 @@ def register_upload_job(items: List[dict]) -> None:
         })
         for data_item in record['files']:
             item_log = (
-                'Concerning trial: ' + data_item['trial'] + 'On Assay: ' + data_item['assay'])
+                'Concerning trial: ' + str(data_item['trial']) + 'On Assay: ' + str(data_item['assay'])
+            )
             logging.info({
                 'message': item_log,
                 'category': 'FAIR-EVE-RECORD'
@@ -161,7 +162,7 @@ def serialize_objectids(items: List[dict]) -> None:
         log = (
             'Record ' +
             record['file_name'] +
-            ' for trial ' + record['trial'] + ' in assay ' + record['assay'] +
+            ' for trial ' + str(record['trial']) + ' in assay ' + str(record['assay']) +
             'uploaded')
         logging.info({
             'message': log,
@@ -187,7 +188,7 @@ def register_analysis(items: List[dict]) -> None:
         analysis['started_by'] = get_current_user()['email']
         log = (
             'Analysis starrted for trial' +
-            analysis['trial'] + ' on assay ' + analysis['assay'] +
+            str(analysis['trial']) + ' on assay ' + str(analysis['assay']) +
             ' by ' + analysis['started_by']
         )
         logging.info({
