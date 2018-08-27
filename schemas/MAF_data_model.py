@@ -726,3 +726,10 @@ MAF = {
         "empty": False
     }
 }
+
+
+MAF_PT = {
+    'public_methods': [],
+    'resource_methods': ['GET', 'POST'],
+    'schema': MAF
+}

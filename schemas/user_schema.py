@@ -113,6 +113,11 @@ DB_ACCOUNTS_UPDATE = {
         'source': 'accounts'
     },
     'schema': {
+        'preferred_contact_email': {
+            'type': 'string',
+            'regex': r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
+            'required': True
+        },
         'organization': {
             'type': 'string',
             'required': True
