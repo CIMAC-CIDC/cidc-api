@@ -85,6 +85,7 @@ spec:
         container('helm') {
           sh 'helm init --client-only'
           sh 'helm repo add cidc "http://${CIDC_CHARTMUSEUM_SERVICE_HOST}:${CIDC_CHARTMUSEUM_SERVICE_PORT}" '
+          sh 'sleep 10'
           sh 'helm upgrade ingestion-api cidc/ingestion-api --set deploy=${deploy} --set image.tag=staging'
         }
       }

@@ -21,10 +21,6 @@ from schemas.clinical_data_schema import CLINICAL_1021
 from schemas.rsem_schema import RSEM_EXPRESSION, RSEM_ISOFORMS
 from schemas.user_schema import DB_USER, DB_ACCOUNTS_INFO, DB_ACCOUNTS_UPDATE
 
-ENV_FILE = find_dotenv()
-if ENV_FILE:
-    load_dotenv(ENV_FILE)
-
 AUTH0_AUDIENCE = env.get('AUTH0_AUDIENCE')
 AUTH0_CALLBACK_URL = env.get('AUTH0_CALLBACK_URL')
 AUTH0_CLIENT_ID = env.get('AUTH0_CLIENT_ID')
@@ -35,8 +31,8 @@ ALGORITHMS = ["RS256"]
 GOOGLE_URL = env.get('GOOGLE_URL')
 GOOGLE_FOLDER_PATH = env.get('GOOGLE_FOLDER_PATH')
 RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
-# Default credentials for a local mongodb, do NOT use for production
 
+# Default credentials for a local mongodb, do NOT use for production
 MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
 MONGO_USERNAME = 'python-eve'
@@ -44,11 +40,30 @@ MONGO_PASSWORD = 'apple'
 MONGO_DBNAME = 'CIDC'
 MONGO_OPTIONS = None
 
+# Rate limiting
+RATE_LIMIT_GET_REQUESTS = env.get('RATE_LIMIT_GET_REQUESTS')
+RATE_LIMIT_POST_REQUESTS = env.get('RATE_LIMIT_POST_REQUESTS')
+RATE_LIMIT_PATCH_REQUESTS = env.get('RATE_LIMIT_PATCH_REQUESTS')
+RATE_LIMIT_DELETE_REQUESTS = env.get('RATE_LIMIT_DELETE_REQUESTS')
+
+RATE_LIMIT_GET_WINDOW = env.get('RATE_LIMIT_GET_WINDOW')
+RATE_LIMIT_POST_WINDOW = env.get('RATE_LIMIT_POST_WINDOW')
+RATE_LIMIT_PATCH_WINDOW = env.get('RATE_LIMIT_PATCH_WINDOW')
+RATE_LIMIT_DELETE_WINDOW = env.get('RATE_LIMIT_DELETE_WINDOW')
+
+RATE_LIMIT_GET = (RATE_LIMIT_GET_REQUESTS, RATE_LIMIT_GET_WINDOW)
+RATE_LIMIT_POST = (RATE_LIMIT_POST_REQUESTS, RATE_LIMIT_POST_WINDOW)
+RATE_LIMIT_PATCH = (RATE_LIMIT_PATCH_REQUESTS, RATE_LIMIT_PATCH_WINDOW)
+RATE_LIMIT_DELETE = (RATE_LIMIT_DELETE_REQUESTS, RATE_LIMIT_DELETE_WINDOW)
+
 if not env.get('IN_CLOUD'):
     logging.info({
         'message': 'notincloud',
         'category': 'INFO-EVE-DEBUG'
     })
+    ENV_FILE = find_dotenv()
+    if ENV_FILE:
+        load_dotenv(ENV_FILE)
 
 if env.get('IN_CLOUD'):
     MONGO_OPTIONS = {
