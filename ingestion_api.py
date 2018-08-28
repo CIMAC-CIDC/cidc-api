@@ -367,7 +367,7 @@ def custom500(error):
     Returns:
         [type] -- [description]
     """
-    try: 
+    try:
         errorlog = str(error)
         logging.error({
             'message': errorlog,
@@ -422,6 +422,11 @@ def add_hooks():
 
     # Pre get filter hook.
     APP.on_pre_GET += hooks.filter_on_id
+
+    # Logging request related hooks
+    APP.on_post_PATCH += hooks.log_patch_request
+    APP.on_post_POST += hooks.log_post_request
+    APP.on_post_DELETE += hooks.log_delete_request
 
 
 if __name__ == '__main__':

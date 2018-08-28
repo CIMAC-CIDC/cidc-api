@@ -271,6 +271,90 @@ def log_file_patched(items: List[dict]) -> None:
             })
 
 
+def log_patch_request(resource: str, request: str, payload: dict) -> None:
+    """
+    Create a formatted log of all patch requests.
+
+    Arguments:
+        resource {str} -- Resource endpoint being queried.
+        request {str} -- Request being sent to endpoint.
+        payload {dict} -- Payload of the patch request.
+
+    Returns:
+        None -- [description]
+    """
+    # Get current user.
+    current_user = get_current_user()
+
+    # Log the request
+    log = (
+        'Patch request made against resource ' +
+        resource + ' by user ' + current_user['email'] +
+        ' method: ' + request.method + ' request structure: ' +
+        request.url + 'Status: ' + request.status_code + '. Patch payload: ' + json.dumps(payload)
+    )
+    logging.info({
+        'message': log,
+        'category': 'INFO-EVE-PATCH-REQUEST'
+    })
+
+
+def log_post_request(resource: str, request: str, payload: dict) -> None:
+    """
+    Create a formatted log of all post requests.
+
+    Arguments:
+        resource {str} -- Resource endpoint being queried.
+        request {str} -- Request being sent to endpoint.
+        payload {dict} -- Payload of the post request.
+
+    Returns:
+        None -- [description]
+    """
+    # Get current user.
+    current_user = get_current_user()
+
+    # Log the request
+    log = (
+        'Post request made against resource ' +
+        resource + ' by user ' + current_user['email'] +
+        ' method: ' + request.method + ' request structure: ' +
+        request.url + 'Status: ' + request.status_code + '. Patch payload: ' + json.dumps(payload)
+    )
+    logging.info({
+        'message': log,
+        'category': 'INFO-EVE-POST-REQUEST'
+    })
+
+
+def log_delete_request(resource: str, request: str, payload: dict) -> None:
+    """
+    Create a formatted log of all post requests.
+
+    Arguments:
+        resource {str} -- Resource endpoint being queried.
+        request {str} -- Request being sent to endpoint.
+        payload {dict} -- Payload of the delete request.
+
+    Returns:
+        None -- [description]
+    """
+    # Get current user.
+    current_user = get_current_user()
+
+    # Log the request
+    log = (
+        'Delete request made against resource ' +
+        resource + ' by user ' + current_user['email'] +
+        ' method: ' + request.method + ' request structure: ' +
+        request.url + 'Status: ' + request.status_code + '. Delete payload: ' + json.dumps(payload)
+    )
+    logging.info({
+        'message': log,
+        'category': 'INFO-EVE-DELETE-REQUEST'
+    })
+
+
 def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     """
     Adds a filter to every get request ensuring that only data that a person
