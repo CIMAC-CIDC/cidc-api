@@ -6,7 +6,7 @@ import datetime
 import json
 import logging
 from typing import List
-from urllib.request import urlopens
+from urllib.request import urlopen
 
 import requests
 from cidc_utils.loghandler import StackdriverJsonFormatter
