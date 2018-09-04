@@ -22,6 +22,11 @@ import hooks
 from constants import (ALGORITHMS, AUTH0_AUDIENCE, AUTH0_CLIENT_ID,
                        AUTH0_CLIENT_SECRET, AUTH0_DOMAIN,
                        AUTH0_PORTAL_AUDIENCE)
+from settings import MONGO_CLIENT, MONGO_DBNAME
+
+
+DB = MONGO_CLIENT[MONGO_DBNAME]
+ACCOUNTS = DB['accounts']
 
 
 class BearerAuth(TokenAuth):
@@ -112,13 +117,12 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
     Returns:
         dict -- User's account if found.
     """
-    accounts = APP.data.driver.db['accounts']
     lookup = {'e-mail': email}
 
     if allowed_roles:
         lookup['role'] = {'$in': allowed_roles}
 
-    account = accounts.find_one(lookup)
+    account = ACCOUNTS.find_one(lookup)
 
     # If account found, update last access.
     if account:
@@ -128,7 +132,7 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
             'category': 'FAIR-EVE-LOGIN'
         })
         if not resource == "accounts":
-            accounts.update(
+            ACCOUNTS.update(
                 {'_id': account['_id']},
                 {'$set': {'last_login': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
 
@@ -155,12 +159,11 @@ def ensure_user_account_exists(email_address: str) -> None:
     :param email_address:
     :return:
     """
-    db_accounts = APP.data.driver.db['accounts']
     lookup = {"username": email_address}
-    lookup_account = db_accounts.find_one(lookup)
+    lookup_account = ACCOUNTS.find_one(lookup)
 
     if not lookup_account:
-        db_accounts.insert({"username": email_address,
+        ACCOUNTS.insert({"username": email_address,
                             "e-mail": email_address,
                             "account_create_date": datetime.datetime.now(
                                 datetime.timezone.utc).isoformat(),
