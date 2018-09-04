@@ -4,7 +4,6 @@ Settings file that lays out the database schema, as well as other constant varia
 """
 import logging
 from os import environ as env
-from pymongo import MongoClient
 from dotenv import find_dotenv, load_dotenv
 
 from schemas.analysis import ANALYSIS, ANALYSIS_STATUS
@@ -40,7 +39,6 @@ MONGO_USERNAME = 'python-eve'
 MONGO_PASSWORD = 'apple'
 MONGO_DBNAME = 'CIDC'
 MONGO_OPTIONS = None
-MONGO_CLIENT = None
 
 # Rate limiting
 RATE_LIMIT_GET_REQUESTS = env.get('RATE_LIMIT_GET_REQUESTS')
@@ -81,8 +79,6 @@ if env.get('IN_CLOUD'):
     MONGO_REPLICA_SET = env.get('MONGO_REPLICA_SET')
     if env.get('MONGO_PORT'):
         MONGO_PORT = int(env.get('MONGO_PORT'))
-    
-    MONGO_CLIENT = MongoClient(MONGO_HOST, username=MONGO_USERNAME, password=MONGO_PASSWORD, authSource=MONGO_AUTH_SOURCE)
     RABBIT_MQ_ADDRESS = (
         'amqp://' + env.get('RABBITMQ_SERVICE_HOST') + ':' + env.get('RABBITMQ_SERVICE_PORT')
     )
