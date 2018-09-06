@@ -94,7 +94,8 @@ spec:
           sh 'helm init --client-only'
           sh 'helm repo add cidc "http://${CIDC_CHARTMUSEUM_SERVICE_HOST}:${CIDC_CHARTMUSEUM_SERVICE_PORT}" '
           sh 'sleep 10'
-          sh "helm upgrade ingestion-api cidc/ingestion-api --set imageSHA=$(gcloud container images list-tags --format='get(digest)' --filter='tags:staging' gcr.io/cidc-dfci/ingestion-api) --set image.tag=staging"
+          sh '''helm upgrade ingestion-api cidc/ingestion-api --set imageSHA=$(gcloud container images list-tags \
+          --format="get(digest)"" --filter="tags:staging" gcr.io/cidc-dfci/ingestion-api) --set image.tag=staging'''
         }
       }
     }
