@@ -128,6 +128,25 @@ def log_user_create(items: List[dict]) -> None:
             })
 
 
+# On updated user.
+def log_user_modified(updates: dict, original: dict) -> None:
+    """
+    Function to log whenever a user's details are altered.
+
+    Arguments:
+        updates {dict} -- Updates made to the user's record.
+        original {dict} -- State of the user record before alteration.
+    """
+    current_user = get_current_user()
+    log = 'Update to user %s made by %s: \n' % (original['e-mail'], current_user['email'])
+    for update in updates:
+        log += 'Changed: %s\n' % json.dumps(update)
+    logging.info({
+        'message': log,
+        'category': 'FAIR-EVE-USER-PATCHED'
+    })
+
+
 # On update trial
 def patch_user_access(updates: dict, original: dict) -> None:
     """
@@ -288,10 +307,10 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
 
     # Log the request
     log = (
-        'Patch request made against resource ' +
-        resource + ' by user ' + current_user['email'] +
-        ' method: ' + request.method + ' request structure: ' +
-        request.url + 'Status: ' + request.status_code + '. Patch payload: ' + json.dumps(payload)
+        'Patch request made against resource %s by user %s. Method: %s.\
+        Request structure: %s. Patch payload: %s' %
+        (resource, current_user['email'], request.method,
+         request.url, json.dumps(payload))
     )
     logging.info({
         'message': log,
@@ -319,7 +338,7 @@ def log_post_request(resource: str, request: str, payload: dict) -> None:
         'Post request made against resource ' +
         resource + ' by user ' + current_user['email'] +
         ' method: ' + request.method + ' request structure: ' +
-        request.url + 'Status: ' + request.status_code + '. Patch payload: ' + json.dumps(payload)
+        request.url + '. Patch payload: ' + json.dumps(payload)
     )
     logging.info({
         'message': log,
@@ -347,7 +366,7 @@ def log_delete_request(resource: str, request: str, payload: dict) -> None:
         'Delete request made against resource ' +
         resource + ' by user ' + current_user['email'] +
         ' method: ' + request.method + ' request structure: ' +
-        request.url + 'Status: ' + request.status_code + '. Delete payload: ' + json.dumps(payload)
+        request.url + '. Delete payload: ' + json.dumps(payload)
     )
     logging.info({
         'message': log,

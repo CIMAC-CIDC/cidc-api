@@ -408,6 +408,7 @@ def add_hooks():
 
     # Accounts hooks
     APP.on_accounts_inserted += hooks.log_user_create
+    APP.on_accounts_updated += hooks.log_user_modified
 
     # Ingestion Hooks
     APP.on_updated_ingestion += hooks.process_data_upload
