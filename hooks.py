@@ -308,9 +308,9 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
     # Log the request
     log = (
         'Patch request made against resource %s by user %s. Method: %s.\
-        Request structure: %s. Patch payload: %s' %
+        Request structure: %s. Patch status: %s' %
         (resource, current_user['email'], request.method,
-         request.url, json.dumps(payload))
+         request.url, payload.status_code)
     )
     logging.info({
         'message': log,
@@ -338,7 +338,7 @@ def log_post_request(resource: str, request: str, payload: dict) -> None:
         'Post request made against resource ' +
         resource + ' by user ' + current_user['email'] +
         ' method: ' + request.method + ' request structure: ' +
-        request.url + '. Patch payload: ' + json.dumps(payload)
+        request.url + '. Patch status: ' + payload.status_code
     )
     logging.info({
         'message': log,
@@ -366,7 +366,7 @@ def log_delete_request(resource: str, request: str, payload: dict) -> None:
         'Delete request made against resource ' +
         resource + ' by user ' + current_user['email'] +
         ' method: ' + request.method + ' request structure: ' +
-        request.url + '. Delete payload: ' + json.dumps(payload)
+        request.url + '. Delete status: ' + payload.status_code
     )
     logging.info({
         'message': log,
