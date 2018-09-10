@@ -51,7 +51,7 @@ spec:
     stage('Docker build') {
         steps {
             container('docker') {
-                sh 'docker build -t ingestion-api .'
+                sh 'docker build -t ingestion-api . --no-cache'
             }
         }
     }

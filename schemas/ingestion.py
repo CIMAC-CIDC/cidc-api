@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
 """
+#!/usr/bin/env python3
 Validator for data about jobs.
 """
 
@@ -56,11 +56,11 @@ INGESTION = {
                     },
                     'sample_id': {
                         'type': 'string',
-                        'required': True
+                        'required': False
                     },
                     'mapping': {
                         'type': 'string',
-                        'required': True
+                        'required': False
                     }
                 },
             },

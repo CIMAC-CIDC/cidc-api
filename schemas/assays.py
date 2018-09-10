@@ -37,15 +37,7 @@ ASSAYS = {
         "non_static_inputs": {
             'type': 'list',
             'schema': {
-                'type': 'dict',
-                'schema': {
-                    'key_name': {
-                        'type': 'string',
-                    },
-                    'key_value': {
-                        'anyof_type': ['string', 'integer'],
-                    },
-                },
+                'type': 'string'
             },
         },
     },
