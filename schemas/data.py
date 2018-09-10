@@ -13,8 +13,7 @@ DATA = {
             'required': True,
         },
         'sample_id': {
-            'type': 'string',
-            'required': True,
+            'type': 'string'
         },
         'trial': {
             'type': 'objectid',
