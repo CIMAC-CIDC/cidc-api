@@ -67,7 +67,8 @@ def register_upload_job(items: List[dict]) -> None:
         })
         for data_item in record['files']:
             item_log = (
-                'Concerning trial: ' + str(data_item['trial']) + 'On Assay: ' + str(data_item['assay'])
+                'Concerning trial: ' +
+                str(data_item['trial']) + 'On Assay: ' + str(data_item['assay'])
             )
             logging.info({
                 'message': item_log,
@@ -310,7 +311,7 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
         'Patch request made against resource %s by user %s. Method: %s.\
         Request structure: %s. Patch status: %s' %
         (resource, current_user['email'], request.method,
-         request.url, payload.status_code)
+         request.url, str(payload.status_code))
     )
     logging.info({
         'message': log,
@@ -338,7 +339,7 @@ def log_post_request(resource: str, request: str, payload: dict) -> None:
         'Post request made against resource ' +
         resource + ' by user ' + current_user['email'] +
         ' method: ' + request.method + ' request structure: ' +
-        request.url + '. Patch status: ' + payload.status_code
+        request.url + '. Patch status: ' + str(payload.status_code)
     )
     logging.info({
         'message': log,
@@ -366,7 +367,7 @@ def log_delete_request(resource: str, request: str, payload: dict) -> None:
         'Delete request made against resource ' +
         resource + ' by user ' + current_user['email'] +
         ' method: ' + request.method + ' request structure: ' +
-        request.url + '. Delete status: ' + payload.status_code
+        request.url + '. Delete status: ' + str(payload.status_code)
     )
     logging.info({
         'message': log,
