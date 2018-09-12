@@ -276,6 +276,22 @@ def process_data_upload(item: dict, original: dict) -> None:
     )
 
 
+def log_data_delete(item: dict) -> None:
+    """
+    Log the deletion of data.
+
+    Arguments:
+        item {dict} -- Deleted item.
+    """
+    current_user = get_current_user()
+    log = 'Record: %s deleted by user %s, google_uri: %s' % (
+        item['file_name'], current_user['email'], item['gs_uri'])
+    logging.info({
+        'message': log,
+        'category': 'INFO-EVE-FAIR'
+    })
+
+
 def log_file_patched(items: List[dict]) -> None:
     """
     Logs when the job has been updated with google URIs
@@ -385,6 +401,10 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         request {str} -- Request being sent to endpoint.
         lookup {dict} -- Filter condition.
     """
+    # If it is a test call, don't bother filtering.
+    if resource == "test":
+        return
+
     doc_id = None
 
     # Check for the case of a document ID query.
@@ -392,7 +412,14 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         doc_id = request.url.split('/')[-1]
 
     # Get current user.
-    current_user = get_current_user()
+    current_user = None
+    try:
+        current_user = get_current_user()
+    except AttributeError:
+        logging.info({
+            'message': 'Error: User context has not been set!',
+            'category': 'ERROR-EVE-AUTH'
+        })
 
     # Log the request
     log = (
@@ -404,10 +431,6 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         'message': log,
         'category': 'INFO-EVE-REQUEST'
     })
-
-    # If the caller is a service, not a user, no need for filters.
-    if 'gty' in current_user and current_user['gty'] == 'client-credentials':
-        return
 
     user_id = current_user['email']
 
