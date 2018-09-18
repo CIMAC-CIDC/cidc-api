@@ -304,7 +304,7 @@ def log_file_patched(items: List[dict]) -> None:
         logging.info({
             'message': message,
             'category': 'INFO-EVE-DATA'
-            })
+        })
 
 
 def log_patch_request(resource: str, request: str, payload: dict) -> None:

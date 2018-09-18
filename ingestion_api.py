@@ -5,6 +5,7 @@ Configures and runs the API.
 import datetime
 import json
 import logging
+import redis
 from typing import List
 from urllib.request import urlopen
 
@@ -48,12 +49,13 @@ class BearerAuth(TokenAuth):
         return email and role
 
 
+REDIS_INSTANCE = redis.StrictRedis(host='localhost', port=6379, db=0)
 APP = Eve(
     'ingestion_api',
     auth=BearerAuth,
     settings='settings.py',
+    redis=REDIS_INSTANCE
 )
-
 APP.debug = False
 
 
@@ -130,7 +132,7 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
         if not resource == "accounts":
             accounts.update(
                 {'_id': account['_id']},
-                {'$set': {'last_login': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
+                {'$set': {'last_access': datetime.datetime.now(datetime.timezone.utc).isoformat()}})
 
             log = 'User: ' + email + ' last login updated'
             logging.info({
