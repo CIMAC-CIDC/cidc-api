@@ -34,18 +34,20 @@ def find_duplicates(items: List[dict]) -> List[str]:
     Returns:
         [str] -- List of duplicate filenames.
     """
-    query = {'$or': []}
+    query = {"$or": []}
 
     for record in items:
-        query['$or'].append({
-            'assay': ObjectId(record['assay']),
-            'trial': ObjectId(record['trial']),
-            'file_name': record['file_name']
-        })
+        query["$or"].append(
+            {
+                "assay": ObjectId(record["assay"]),
+                "trial": ObjectId(record["trial"]),
+                "file_name": record["file_name"],
+            }
+        )
 
-    data = app.data.driver.db['data']
-    data_results = list(data.find(query, projection=['file_name']))
-    return [x['file_name'] for x in data_results]
+    data = app.data.driver.db["data"]
+    data_results = list(data.find(query, projection=["file_name"]))
+    return [x["file_name"] for x in data_results]
 
 
 # On insert ingestion.
@@ -58,33 +60,31 @@ def register_upload_job(items: List[dict]) -> None:
     """
     files = []
     for record in items:
-        record['start_time'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        record['started_by'] = get_current_user()['email']
-        log = 'Upload job started by' + record['started_by']
-        logging.info({
-            'message': log,
-            'category': 'FAIR-EVE-RECORD'
-        })
-        for data_item in record['files']:
+        record["start_time"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        record["started_by"] = get_current_user()["email"]
+        log = "Upload job started by" + record["started_by"]
+        logging.info({"message": log, "category": "FAIR-EVE-RECORD"})
+        for data_item in record["files"]:
             item_log = (
-                'Concerning trial: ' +
-                str(data_item['trial']) + 'On Assay: ' + str(data_item['assay'])
+                "Concerning trial: "
+                + str(data_item["trial"])
+                + "On Assay: "
+                + str(data_item["assay"])
             )
-            logging.info({
-                'message': item_log,
-                'category': 'FAIR-EVE-RECORD'
-            })
+            logging.info({"message": item_log, "category": "FAIR-EVE-RECORD"})
             files.append(data_item)
-            data_item['assay'] = ObjectId(data_item['assay'])
-            data_item['trial'] = ObjectId(data_item['trial'])
+            data_item["assay"] = ObjectId(data_item["assay"])
+            data_item["trial"] = ObjectId(data_item["trial"])
 
     duplicate_filenames = find_duplicates(files)
 
     if duplicate_filenames:
-        logging.error({
-            'message': "Error, duplicate file, upload rejected",
-            'category': 'ERROR-EVE-REQUEST'
-            })
+        logging.error(
+            {
+                "message": "Error, duplicate file, upload rejected",
+                "category": "ERROR-EVE-REQUEST",
+            }
+        )
         abort(500, "Upload aborted, duplicate files found")
 
 
@@ -97,18 +97,10 @@ def check_for_analysis(items: List[dict]) -> None:
     Arguments:
         items {[dict]} -- list of data records
     """
-    start_celery_task(
-        "framework.tasks.analysis_tasks.analysis_pipeline",
-        [],
-        678
-    )
+    start_celery_task("framework.tasks.analysis_tasks.analysis_pipeline", [], 678)
 
     # Start a scan for files that require postprocessing.
-    start_celery_task(
-        "framework.tasks.processing_tasks.postprocessing",
-        [items],
-        91011
-    )
+    start_celery_task("framework.tasks.processing_tasks.postprocessing", [items], 91011)
 
 
 # On-inserted user.
@@ -121,12 +113,9 @@ def log_user_create(items: List[dict]) -> None:
     """
     for new_user in items:
         for key in new_user:
-            log = 'New user created'
-            log += ', ' + key + ' : ' + new_user[key]
-            logging.info({
-                'message': log,
-                'category': 'FAIR-EVE-NEWUSER'
-            })
+            log = "New user created"
+            log += ", " + key + " : " + new_user[key]
+            logging.info({"message": log, "category": "FAIR-EVE-NEWUSER"})
 
 
 # On updated user.
@@ -139,13 +128,13 @@ def log_user_modified(updates: dict, original: dict) -> None:
         original {dict} -- State of the user record before alteration.
     """
     current_user = get_current_user()
-    log = 'Update to user %s made by %s: \n' % (original['e-mail'], current_user['email'])
+    log = "Update to user %s made by %s: \n" % (
+        original["e-mail"],
+        current_user["email"],
+    )
     for update in updates:
-        log += 'Changed: %s\n' % json.dumps(update)
-    logging.info({
-        'message': log,
-        'category': 'FAIR-EVE-USER-PATCHED'
-    })
+        log += "Changed: %s\n" % json.dumps(update)
+    logging.info({"message": log, "category": "FAIR-EVE-USER-PATCHED"})
 
 
 # On update trial
@@ -158,12 +147,31 @@ def patch_user_access(updates: dict, original: dict) -> None:
         updates {dict} -- Updates to trial object.
         original {dict} -- Original record.
     """
-    if 'collaborators' in updates:
-        n_col = updates['collaborators']
+    same = len(updates['collaborators']) == len(original['collaborators'])
+    deduped = len(updates['collaborators']) == len(set(updates['collaborators']))
+
+    log = 'Collab update validation error'
+
+
+    if not same or not deduped:
+        if not same:
+            log += ' Old and new list have the same length.'
+        if not deduped:
+            log += ' Duplicate items found in list.'
+
+        log += ' Update not performed.'
+        logging.warning({
+            'message': log,
+            'category': 'WARNING-EVE-FAIR-UPDATE-TRIAL'
+        })
+        abort(500, 'Collaborators list validation error')
+
+    if "collaborators" in updates:
+        n_col = updates["collaborators"]
         start_celery_task(
-            'framework.tasks.administrative_tasks.update_trial_blob_acl',
-            [original['_id'], n_col],
-            7889
+            "framework.tasks.administrative_tasks.update_trial_blob_acl",
+            [original["_id"], n_col],
+            7889,
         )
 
 
@@ -176,18 +184,19 @@ def serialize_objectids(items: List[dict]) -> None:
         items {[dict]} -- List of data records.
     """
     for record in items:
-        record['assay'] = ObjectId(record['assay'])
-        record['trial'] = ObjectId(record['trial'])
-        record['processed'] = False
+        record["assay"] = ObjectId(record["assay"])
+        record["trial"] = ObjectId(record["trial"])
+        record["processed"] = False
         log = (
-            'Record ' +
-            record['file_name'] +
-            ' for trial ' + str(record['trial']) + ' in assay ' + str(record['assay']) +
-            'uploaded')
-        logging.info({
-            'message': log,
-            'category': 'INFO-EVE-DATA'
-        })
+            "Record "
+            + record["file_name"]
+            + " for trial "
+            + str(record["trial"])
+            + " in assay "
+            + str(record["assay"])
+            + "uploaded"
+        )
+        logging.info({"message": log, "category": "INFO-EVE-DATA"})
 
 
 # On insert analysis.
@@ -200,21 +209,20 @@ def register_analysis(items: List[dict]) -> None:
         items {[dict]} -- List of analysis records.
     """
     for analysis in items:
-        analysis['status'] = {
-            'progress': 'In Progress',
-            'message': ''
-        }
-        analysis['start_date'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        analysis['started_by'] = get_current_user()['email']
+        analysis["status"] = {"progress": "In Progress", "message": ""}
+        analysis["start_date"] = datetime.datetime.now(
+            datetime.timezone.utc
+        ).isoformat()
+        analysis["started_by"] = get_current_user()["email"]
         log = (
-            'Analysis starrted for trial' +
-            str(analysis['trial']) + ' on assay ' + str(analysis['assay']) +
-            ' by ' + analysis['started_by']
+            "Analysis starrted for trial"
+            + str(analysis["trial"])
+            + " on assay "
+            + str(analysis["assay"])
+            + " by "
+            + analysis["started_by"]
         )
-        logging.info({
-            'message': log,
-            'category': 'INFO-EVE-DATA'
-        })
+        logging.info({"message": log, "category": "INFO-EVE-DATA"})
 
 
 def start_celery_task(task: str, arguments: object, task_id: int) -> None:
@@ -226,16 +234,13 @@ def start_celery_task(task: str, arguments: object, task_id: int) -> None:
         arguments {[object]} -- List of arguments to be supplied.
         id {int} -- Integer ID to uniquely identify the string.
     """
-    task_exchange = Exchange('', type='direct')
+    task_exchange = Exchange("", type="direct")
     connection = Connection(RABBIT_MQ_ADDRESS)
     channel = connection.channel()
 
     # Generate Producer
     producer = Producer(
-        exchange=task_exchange,
-        channel=channel,
-        routing_key='celery',
-        serializer='json'
+        exchange=task_exchange, channel=channel, routing_key="celery", serializer="json"
     )
 
     # Construct data
@@ -245,14 +250,14 @@ def start_celery_task(task: str, arguments: object, task_id: int) -> None:
         "task": task,
         "args": arguments,
         "kwargs": {},
-        "retries": 0
+        "retries": 0,
     }
 
     # Send data
     producer.publish(
         json.dumps(payload, default=json_util.default),
-        content_type='application/json',
-        content_encoding='utf-8'
+        content_type="application/json",
+        content_encoding="utf-8",
     )
 
     # Close Connection
@@ -268,11 +273,11 @@ def process_data_upload(item: dict, original: dict) -> None:
         item {dict} -- Records to be moved
         original {dict} -- Patched upload record with GSURL.
     """
-    google_path = app.config['GOOGLE_URL'] + app.config['GOOGLE_FOLDER_PATH']
+    google_path = app.config["GOOGLE_URL"] + app.config["GOOGLE_FOLDER_PATH"]
     start_celery_task(
         "framework.tasks.cromwell_tasks.move_files_from_staging",
         [original, google_path],
-        12345
+        12345,
     )
 
 
@@ -284,12 +289,12 @@ def log_data_delete(item: dict) -> None:
         item {dict} -- Deleted item.
     """
     current_user = get_current_user()
-    log = 'Record: %s deleted by user %s, google_uri: %s' % (
-        item['file_name'], current_user['email'], item['gs_uri'])
-    logging.info({
-        'message': log,
-        'category': 'INFO-EVE-FAIR'
-    })
+    log = "Record: %s deleted by user %s, google_uri: %s" % (
+        item["file_name"],
+        current_user["email"],
+        item["gs_uri"],
+    )
+    logging.info({"message": log, "category": "INFO-EVE-FAIR"})
 
 
 def log_file_patched(items: List[dict]) -> None:
@@ -301,10 +306,7 @@ def log_file_patched(items: List[dict]) -> None:
     """
     for item in items:
         message = "Google Upload for item: " + str(item) + " completed."
-        logging.info({
-            'message': message,
-            'category': 'INFO-EVE-DATA'
-        })
+        logging.info({"message": message, "category": "INFO-EVE-DATA"})
 
 
 def log_patch_request(resource: str, request: str, payload: dict) -> None:
@@ -324,15 +326,17 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
 
     # Log the request
     log = (
-        'Patch request made against resource %s by user %s. Method: %s.\
-        Request structure: %s. Patch status: %s' %
-        (resource, current_user['email'], request.method,
-         request.url, str(payload.status_code))
+        "Patch request made against resource %s by user %s. Method: %s.\
+        Request structure: %s. Patch status: %s"
+        % (
+            resource,
+            current_user["email"],
+            request.method,
+            request.url,
+            str(payload.status_code),
+        )
     )
-    logging.info({
-        'message': log,
-        'category': 'INFO-EVE-PATCH-REQUEST'
-    })
+    logging.info({"message": log, "category": "INFO-EVE-PATCH-REQUEST"})
 
 
 def log_post_request(resource: str, request: str, payload: dict) -> None:
@@ -352,15 +356,18 @@ def log_post_request(resource: str, request: str, payload: dict) -> None:
 
     # Log the request
     log = (
-        'Post request made against resource ' +
-        resource + ' by user ' + current_user['email'] +
-        ' method: ' + request.method + ' request structure: ' +
-        request.url + '. Patch status: ' + str(payload.status_code)
+        "Post request made against resource "
+        + resource
+        + " by user "
+        + current_user["email"]
+        + " method: "
+        + request.method
+        + " request structure: "
+        + request.url
+        + ". Patch status: "
+        + str(payload.status_code)
     )
-    logging.info({
-        'message': log,
-        'category': 'INFO-EVE-POST-REQUEST'
-    })
+    logging.info({"message": log, "category": "INFO-EVE-POST-REQUEST"})
 
 
 def log_delete_request(resource: str, request: str, payload: dict) -> None:
@@ -380,15 +387,18 @@ def log_delete_request(resource: str, request: str, payload: dict) -> None:
 
     # Log the request
     log = (
-        'Delete request made against resource ' +
-        resource + ' by user ' + current_user['email'] +
-        ' method: ' + request.method + ' request structure: ' +
-        request.url + '. Delete status: ' + str(payload.status_code)
+        "Delete request made against resource "
+        + resource
+        + " by user "
+        + current_user["email"]
+        + " method: "
+        + request.method
+        + " request structure: "
+        + request.url
+        + ". Delete status: "
+        + str(payload.status_code)
     )
-    logging.info({
-        'message': log,
-        'category': 'INFO-EVE-DELETE-REQUEST'
-    })
+    logging.info({"message": log, "category": "INFO-EVE-DELETE-REQUEST"})
 
 
 def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
@@ -408,58 +418,66 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     doc_id = None
 
     # Check for the case of a document ID query.
-    if not request.args and not request.url.split('/')[-1] == resource:
-        doc_id = request.url.split('/')[-1]
+    if not request.args and not request.url.split("/")[-1] == resource:
+        doc_id = request.url.split("/")[-1]
 
     # Get current user.
     current_user = None
     try:
         current_user = get_current_user()
     except AttributeError:
-        logging.info({
-            'message': 'Error: User context has not been set!',
-            'category': 'ERROR-EVE-AUTH'
-        })
+        logging.info(
+            {
+                "message": "Error: User context has not been set!",
+                "category": "ERROR-EVE-AUTH",
+            }
+        )
 
     # Log the request
     log = (
-        'Data request made against resource ' +
-        resource + ' by user ' + current_user['email'] +
-        ' method: ' + request.method + ' request structure: ' + request.url
+        "Data request made against resource "
+        + resource
+        + " by user "
+        + current_user["email"]
+        + " method: "
+        + request.method
+        + " request structure: "
+        + request.url
     )
-    logging.info({
-        'message': log,
-        'category': 'INFO-EVE-REQUEST'
-    })
+    logging.info({"message": log, "category": "INFO-EVE-REQUEST"})
 
-    user_id = current_user['email']
+    user_id = current_user["email"]
 
     # Logic for adding the appropriate filter based on the endpoint.
     try:
-        if resource == 'trials':
+        if resource == "trials":
             pass
-        elif resource == 'ingestion':
-            lookup['started_by'] = user_id
-        elif resource in ['accounts_info', 'accounts_update'] and request.method == "GET":
-            lookup['username'] = user_id
-        elif resource in ['accounts']:
+        elif resource == "ingestion":
+            lookup["started_by"] = user_id
+        elif (
+            resource in ["accounts_info", "accounts_update"] and request.method == "GET"
+        ):
+            lookup["username"] = user_id
+        elif resource in ["accounts"]:
             pass
         else:
-            accounts = app.data.driver.db['trials']
-            trials = accounts.find({'collaborators': user_id}, {'_id': 1, 'assays': 1})
-            if resource == 'assays':
+            accounts = app.data.driver.db["trials"]
+            trials = accounts.find({"collaborators": user_id}, {"_id": 1, "assays": 1})
+            if resource == "assays":
                 # Get the list of assay_ids the user is cleared to know about.
-                assay_ids = [str(x['assay_id']) for trial in trials for x in trial['assays']]
+                assay_ids = [
+                    str(x["assay_id"]) for trial in trials for x in trial["assays"]
+                ]
                 if not doc_id:
-                    lookup['_id'] = {'$in': assay_ids}
+                    lookup["_id"] = {"$in": assay_ids}
                 elif doc_id not in assay_ids:
                     abort(500, "You are not cleared to view this item")
             else:
-                trial_ids = [str(x['_id']) for x in trials]
-                lookup['trial'] = {'$in': trial_ids}
+                trial_ids = [str(x["_id"]) for x in trials]
+                lookup["trial"] = {"$in": trial_ids}
     except TypeError:
-        logging.error({
-            'message': 'Error applying filters',
-            'category': 'ERROR-EVE-REQUEST'
-        }, exc_info=True)
+        logging.error(
+            {"message": "Error applying filters", "category": "ERROR-EVE-REQUEST"},
+            exc_info=True,
+        )
         abort(500, "There was an error processing your viewable data.")

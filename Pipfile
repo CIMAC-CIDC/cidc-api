@@ -23,6 +23,7 @@ redis = "*"
 [dev-packages]
 pylint = "*"
 "pep8" = "*"
+black = "*"
 
 [requires]
 python_version = "3.6"
