@@ -6,7 +6,7 @@ Validator for Trial data.
 TRIALS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
-    'allowed_read_roles': ['user'],
+    'allowed_read_roles': ['user', 'uploader'],
     'allowed_roles': ['admin', 'superuser'],
     'allowed_filters': ['collaborators', 'principal_investigator', '_id', 'assays.assay_id'],
     'schema': {
