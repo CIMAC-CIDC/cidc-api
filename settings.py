@@ -20,6 +20,7 @@ from schemas.cnv_schema import CNV
 from schemas.clinical_data_schema import CLINICAL_1021
 from schemas.rsem_schema import RSEM_EXPRESSION, RSEM_ISOFORMS
 from schemas.user_schema import DB_USER, DB_ACCOUNTS_INFO, DB_ACCOUNTS_UPDATE
+from schemas.olink_schema import OLINK
 
 AUTH0_AUDIENCE = env.get('AUTH0_AUDIENCE')
 AUTH0_CALLBACK_URL = env.get('AUTH0_CALLBACK_URL')
@@ -136,5 +137,6 @@ DOMAIN = {
     'rsem_isoforms': RSEM_ISOFORMS,
     'accounts': DB_USER,
     'accounts_info': DB_ACCOUNTS_INFO,
-    'accounts_update': DB_ACCOUNTS_UPDATE
+    'accounts_update': DB_ACCOUNTS_UPDATE,
+    'olink': OLINK
 }

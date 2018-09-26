@@ -129,7 +129,7 @@ def log_user_modified(updates: dict, original: dict) -> None:
     """
     current_user = get_current_user()
     log = "Update to user %s made by %s: \n" % (
-        original["e-mail"],
+        original["email"],
         current_user["email"],
     )
     for update in updates:

@@ -2,7 +2,7 @@
 """
 Schema for olink data
 """
-from schemas import float_coercer, create_biomarker_schema
+from schemas import float_coercer, create_biomarker_schema, int_coercer
 from schemas.validation_error_schema import VALIDATION_ERROR
 
 OLINK_SAMPLE_DATA = {
@@ -13,7 +13,8 @@ OLINK_SAMPLE_DATA = {
     'value': {
         'type': 'float',
         'required': True,
-        'coerce': float_coercer
+        'coerce': float_coercer,
+        'nullable': True
     },
     'qc_fail': {
         'type': 'boolean',
@@ -41,15 +42,20 @@ OLINK_ASSAY = {
     'lod': {
         'type': 'float',
         'required': True,
-        'coerce': float_coercer
+        'coerce': float_coercer,
+        'nullable': True
     },
     'missing_data_freq': {
-        'type': 'string',
-        'required': True
+        'type': 'integer',
+        'required': True,
+        'coerce': int_coercer
     },
     'results': {
         'type': 'list',
-        'schema': OLINK_SAMPLE_DATA
+        'schema': {
+            'type': 'dict',
+            'schema': OLINK_SAMPLE_DATA
+        }
     },
     'olink_id': {
         'type': 'string',
@@ -64,7 +70,7 @@ SAMPLE_SCHEMA = {
     },
     'qc_status': {
         'type': 'string',
-        'anyof': ['Warning', 'Pass', 'Fail'],
+        'allowed': ['Warning', 'Pass', 'Fail'],
         'required': True
     },
     'plate_id': {
@@ -76,22 +82,29 @@ SAMPLE_SCHEMA = {
 OLINK = create_biomarker_schema({
     'npx_m_ver': {
         'type': 'string',
-        'required': True
     },
     'ol_assay': {
         'type': 'list',
-        'schema': OLINK_ASSAY
+        'schema': {
+            'type': 'dict',
+            'schema': OLINK_ASSAY
+        }
     },
     'ol_panel_type': {
         'type': 'string',
-        'required': True
     },
     'samples': {
         'type': 'list',
-        'schema': SAMPLE_SCHEMA
+        'schema': {
+            'type': 'dict',
+            'schema': SAMPLE_SCHEMA
+        }
     },
     'validation_errors': {
         'type': 'list',
-        'schema': VALIDATION_ERROR
+        'schema': {
+            'type': 'dict',
+            'schema': VALIDATION_ERROR
+        }
     }
 })
