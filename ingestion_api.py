@@ -117,7 +117,7 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
         dict -- User's account if found.
     """
     accounts = APP.data.driver.db["accounts"]
-    lookup = {"e-mail": email}
+    lookup = {"email": email}
 
     if allowed_roles:
         lookup["role"] = {"$in": allowed_roles}
@@ -153,7 +153,7 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
 
 def ensure_user_account_exists(email_address: str) -> None:
     """
-    Take an e-mail address and verify an account exists with that username.
+    Take an email address and verify an account exists with that username.
     This is useful for novel signups that we can't check a role for yet,
     because the account doesn't exist. Default the role and applicable dates.
 
@@ -168,7 +168,7 @@ def ensure_user_account_exists(email_address: str) -> None:
         db_accounts.insert(
             {
                 "username": email_address,
-                "e-mail": email_address,
+                "email": email_address,
                 "account_create_date": datetime.datetime.now(
                     datetime.timezone.utc
                 ).isoformat(),
@@ -281,7 +281,7 @@ def token_auth(token):
                 401,
             )
 
-        # Get user e-mail from userinfo endpoint.
+        # Get user email from userinfo endpoint.
         if request_from_portal:
             _request_ctx_stack.top.current_user = payload
 

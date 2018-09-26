@@ -16,12 +16,12 @@ VALIDATION_ERROR = {
     },
     'raw_or_parse': {
         'type': 'string',
-        'anyof': ['RAW', 'PARSE'],
+        'allowed': ['RAW', 'PARSE'],
         'required': True
     },
     'severity': {
         'type': 'string',
-        'anyof': ['WARNING', 'CRITICAL'],
+        'allowed': ['WARNING', 'CRITICAL'],
         'required': True
     }
 }
