@@ -6,7 +6,7 @@ Schema for ...data?
 DATA = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
-    'allowed_roles': ['admin', 'user'],
+    'allowed_roles': ['admin', 'user', 'uploader'],
     'schema': {
         'file_name': {
             'type': 'string',
