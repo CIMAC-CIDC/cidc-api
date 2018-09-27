@@ -6,7 +6,7 @@ Validator for assay data.
 ASSAYS = {
     'public_methods': [],
     'resource_methods': ['GET'],
-    'allowed_roles': ['admin', 'superuser', 'user'],
+    'allowed_roles': ['admin', 'superuser', 'user', 'uploader'],
     'schema': {
         '_id': {
             'type': 'objectid',
