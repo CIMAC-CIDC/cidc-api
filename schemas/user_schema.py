@@ -52,8 +52,8 @@ DB_USER = {
             'required': True
         },
         'role': {
-            'type': 'string',
-            'oneof': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
+            'allowed': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer', 'disabled'],
+            'type': 'string'
         },
         'position_description': {
             'type': 'string',
