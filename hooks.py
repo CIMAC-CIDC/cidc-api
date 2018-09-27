@@ -147,24 +147,20 @@ def patch_user_access(updates: dict, original: dict) -> None:
         updates {dict} -- Updates to trial object.
         original {dict} -- Original record.
     """
-    same = len(updates['collaborators']) == len(original['collaborators'])
-    deduped = len(updates['collaborators']) == len(set(updates['collaborators']))
+    same = len(updates["collaborators"]) == len(original["collaborators"])
+    deduped = len(updates["collaborators"]) == len(set(updates["collaborators"]))
 
-    log = 'Collab update validation error'
-
+    log = "Collab update validation error"
 
     if not same or not deduped:
         if not same:
-            log += ' Old and new list have the same length.'
+            log += " Old and new list have the same length."
         if not deduped:
-            log += ' Duplicate items found in list.'
+            log += " Duplicate items found in list."
 
-        log += ' Update not performed.'
-        logging.warning({
-            'message': log,
-            'category': 'WARNING-EVE-FAIR-UPDATE-TRIAL'
-        })
-        abort(500, 'Collaborators list validation error')
+        log += " Update not performed."
+        logging.warning({"message": log, "category": "WARNING-EVE-FAIR-UPDATE-TRIAL"})
+        abort(500, "Collaborators list validation error")
 
     if "collaborators" in updates:
         n_col = updates["collaborators"]
@@ -325,18 +321,25 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
     current_user = get_current_user()
 
     # Log the request
-    log = (
-        "Patch request made against resource %s by user %s. Method: %s.\
-        Request structure: %s. Patch status: %s"
-        % (
-            resource,
-            current_user["email"],
-            request.method,
-            request.url,
-            str(payload.status_code),
+    try:
+        log = (
+            "Patch request made against resource %s by user %s. Method: %s.\
+            Request structure: %s. Patch status: %s"
+            % (
+                resource,
+                current_user["email"],
+                request.method,
+                request.url,
+                str(payload.status_code),
+            )
         )
-    )
-    logging.info({"message": log, "category": "INFO-EVE-PATCH-REQUEST"})
+        logging.info({"message": log, "category": "INFO-EVE-PATCH-REQUEST"})
+    except TypeError:
+        log = {
+            "Patch request failed for resource %s, by user %s."
+            % (resource, current_user["email"])
+        }
+        logging.info({"message": log, "category": "ERROR-EVE-PATCH-REQUEST"})
 
 
 def log_post_request(resource: str, request: str, payload: dict) -> None:
