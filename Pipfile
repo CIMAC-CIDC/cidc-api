@@ -18,10 +18,12 @@ cidc_utils = {git = "https://github.com/dfci/cidc-utils"}
 python-json-logger = "*"
 google-cloud-logging = "*"
 gunicorn = "*"
+redis = "*"
 
 [dev-packages]
 pylint = "*"
 "pep8" = "*"
+black = "*"
 
 [requires]
 python_version = "3.6"

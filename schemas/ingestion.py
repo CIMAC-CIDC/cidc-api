@@ -1,5 +1,5 @@
-#!/usr/bin/env python3
 """
+#!/usr/bin/env python3
 Validator for data about jobs.
 """
 
@@ -9,7 +9,7 @@ INGESTION = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'item_methods': ['GET', 'PATCH'],
-    'allowed_roles': ['user', 'superuser', 'admin'],
+    'allowed_roles': ['user', 'superuser', 'admin', 'uploader'],
     'allowed_filters': ['started_by'],
     'schema': {
         'number_of_files': {
@@ -56,11 +56,11 @@ INGESTION = {
                     },
                     'sample_id': {
                         'type': 'string',
-                        'required': True
+                        'required': False
                     },
                     'mapping': {
                         'type': 'string',
-                        'required': True
+                        'required': False
                     }
                 },
             },

@@ -6,15 +6,14 @@ Schema for ...data?
 DATA = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
-    'allowed_roles': ['admin', 'user'],
+    'allowed_roles': ['admin', 'user', 'uploader'],
     'schema': {
         'file_name': {
             'type': 'string',
             'required': True,
         },
         'sample_id': {
-            'type': 'string',
-            'required': True,
+            'type': 'string'
         },
         'trial': {
             'type': 'objectid',

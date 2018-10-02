@@ -16,7 +16,7 @@ DB_USER = {
             'required': True,
             'unique': True
         },
-        'e-mail': {
+        'email': {
             'type': 'string',
             'regex': r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
             'required': True,
@@ -52,8 +52,8 @@ DB_USER = {
             'required': True
         },
         'role': {
-            'type': 'string',
-            'oneof': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
+            'allowed': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer', 'disabled'],
+            'type': 'string'
         },
         'position_description': {
             'type': 'string',
