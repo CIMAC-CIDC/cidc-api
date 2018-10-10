@@ -1,7 +1,8 @@
 """
 Validator schema for copy numebr variant data.
 """
-from schemas import float_coercer, create_biomarker_schema
+from schemas.coercers import FLOAT_COERCER as float_coercer
+from schemas.tools import create_biomarker_schema
 
 CNV = create_biomarker_schema({
     'chromosome': {

@@ -1,7 +1,8 @@
 """
 Schema for neoantigen prediction files.
 """
-from schemas import float_coercer, create_biomarker_schema
+from schemas.coercers import FLOAT_COERCER as float_coercer
+from schemas.tools import create_biomarker_schema
 
 
 NEOANTIGEN = create_biomarker_schema({

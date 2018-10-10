@@ -124,5 +124,6 @@ DOMAIN = {
     'accounts': schemas.DB_USER,
     'accounts_info': schemas.DB_ACCOUNTS_INFO,
     'accounts_update': schemas.DB_ACCOUNTS_UPDATE,
-    'olink': schemas.OLINK
+    'olink': schemas.OLINK,
+    'olink_meta': schemas.OLINK_META
 }

@@ -2,8 +2,10 @@
 """
 Schema for olink data
 """
-from schemas import float_coercer, create_biomarker_schema, int_coercer
+from schemas.coercers import FLOAT_COERCER as float_coercer
+from schemas.coercers import INT_COERCER as int_coercer
 from schemas.validation_error_schema import VALIDATION_ERROR
+from schemas.tools import create_biomarker_schema
 
 OLINK_SAMPLE_DATA = {
     'sample_id': {
@@ -82,23 +84,27 @@ SAMPLE_SCHEMA = {
 OLINK = create_biomarker_schema({
     'npx_m_ver': {
         'type': 'string',
+        'nullable': True,
     },
     'ol_assay': {
         'type': 'list',
         'schema': {
             'type': 'dict',
             'schema': OLINK_ASSAY
-        }
+        },
+        'nullable': True,
     },
     'ol_panel_type': {
         'type': 'string',
+        'nullable': True,
     },
     'samples': {
         'type': 'list',
         'schema': {
             'type': 'dict',
             'schema': SAMPLE_SCHEMA
-        }
+        },
+        'nullable': True,
     },
     'validation_errors': {
         'type': 'list',

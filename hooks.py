@@ -9,7 +9,7 @@ from typing import List
 from bson import json_util, ObjectId
 from flask import current_app as app, abort, _request_ctx_stack
 from kombu import Connection, Exchange, Producer
-from constants import RABBIT_MQ_ADDRESS
+from settings import RABBIT_MQ_ADDRESS
 
 
 def get_current_user():
