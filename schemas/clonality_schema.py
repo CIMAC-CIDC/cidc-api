@@ -1,7 +1,8 @@
 """
 Schemas for the various clonality metrics
 """
-from schemas import float_coercer, create_biomarker_schema
+from schemas.coercers import FLOAT_COERCER as float_coercer
+from schemas.tools import create_biomarker_schema
 
 CLONALITY_CLUSTER = create_biomarker_schema({
     'sample_id': {

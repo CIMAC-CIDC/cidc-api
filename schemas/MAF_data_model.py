@@ -3,7 +3,7 @@
 Validator for MAF data.
 """
 
-from schemas import float_coercer
+from schemas.coercers import FLOAT_COERCER as float_coercer
 
 
 MAF = {

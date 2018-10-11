@@ -1,7 +1,7 @@
 """
 Cerberus rules for HLA Types
 """
-from schemas import create_biomarker_schema
+from schemas.tools import create_biomarker_schema
 
 HAPLOTYPE = {
     'allele_group': {

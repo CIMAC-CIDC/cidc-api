@@ -1,4 +1,3 @@
-#!/usrbin/env python3
 """
 Schema for ...data?
 """

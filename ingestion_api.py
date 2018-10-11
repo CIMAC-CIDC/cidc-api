@@ -20,7 +20,7 @@ from flask_oauthlib.client import OAuth
 from jose import jwt
 
 import hooks
-from constants import (
+from settings import (
     ALGORITHMS,
     AUTH0_AUDIENCE,
     AUTH0_CLIENT_ID,
