@@ -18,4 +18,4 @@ from schemas.clinical_data_schema import CLINICAL_1021
 from schemas.rsem_schema import RSEM_EXPRESSION, RSEM_ISOFORMS
 from schemas.user_schema import DB_USER, DB_ACCOUNTS_INFO, DB_ACCOUNTS_UPDATE
 from schemas.olink_schema import OLINK
-from schemas.metadata_schema import OL_SCHEMA
+from schemas.metadata_schema import BIOREPOSITORY
