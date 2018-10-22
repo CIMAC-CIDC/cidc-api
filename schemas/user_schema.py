@@ -144,5 +144,3 @@ DB_ACCOUNTS_UPDATE = {
         }
     }
 }
-
-

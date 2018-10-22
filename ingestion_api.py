@@ -401,6 +401,7 @@ def add_hooks():
     # Data Hooks
     APP.on_insert_data += hooks.serialize_objectids
     APP.on_inserted_data += hooks.check_for_analysis
+    APP.on_updated_data += hooks.data_patched
 
     # Analysis Hooks
     APP.on_insert_analysis += hooks.register_analysis

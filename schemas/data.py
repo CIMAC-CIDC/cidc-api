@@ -6,6 +6,11 @@ DATA = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'allowed_roles': ['admin', 'user'],
+    'datasource': {
+        'filter': {
+            'visibility': True
+        }
+    },
     'schema': {
         'file_name': {
             'type': 'string',
@@ -39,6 +44,25 @@ DATA = {
         },
         'processed': {
             'type': 'boolean'
+        },
+        'visibility': {
+            'type': 'boolean'
+        },
+        'children': {
+            'type': 'list',
+            'schema': {
+                'type': 'dict',
+                'schema': {
+                    '_id': {
+                        'type': 'string',
+                        'required': True
+                    },
+                    'resource': {
+                        'type': 'string',
+                        'required': True
+                    }
+                }
+            }
         }
     }
 }
