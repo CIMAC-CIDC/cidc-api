@@ -42,6 +42,7 @@ def find_duplicates(items: List[dict]) -> List[str]:
                 "assay": ObjectId(record["assay"]),
                 "trial": ObjectId(record["trial"]),
                 "file_name": record["file_name"],
+                "visibility": True,
             }
         )
 
@@ -65,11 +66,9 @@ def register_upload_job(items: List[dict]) -> None:
         log = "Upload job started by" + record["started_by"]
         logging.info({"message": log, "category": "FAIR-EVE-RECORD"})
         for data_item in record["files"]:
-            item_log = (
-                "Concerning trial: "
-                + str(data_item["trial"])
-                + "On Assay: "
-                + str(data_item["assay"])
+            item_log = "Concerning trial: %s On Assay: %s" % (
+                str(data_item["trial"]),
+                str(data_item["assay"]),
             )
             logging.info({"message": item_log, "category": "FAIR-EVE-RECORD"})
             files.append(data_item)
@@ -98,9 +97,37 @@ def check_for_analysis(items: List[dict]) -> None:
         items {[dict]} -- list of data records
     """
     start_celery_task("framework.tasks.analysis_tasks.analysis_pipeline", [], 678)
-
-    # Start a scan for files that require postprocessing.
     start_celery_task("framework.tasks.processing_tasks.postprocessing", [items], 91011)
+
+
+# on updated data.
+def data_patched(updates: dict, original: dict) -> None:
+    """
+    Hook to watch for changes to data records, specifically visibility changes.
+    
+    Arguments:
+        updates {dict} -- [description]
+        original {dict} -- [description]
+    
+    Returns:
+        None -- [description]
+    """
+    o_visible = updates["visibility"]
+    n_visible = original["visibility"]
+
+    if o_visible == n_visible:
+        return
+
+    if o_visible < n_visible:
+        start_celery_task("framework.tasks.processing_tasks.postprocessing", [updates], 91011)
+        # make visible
+    elif n_visible > o_visible:
+        children = updates["children"]
+        # Delete all derived records.
+        for child in children:
+            collection = app.data.driver.db[child["resource"]]
+            collection.remove({"_id": child["_id"]})
+        # make invisible
 
 
 # On-inserted user.
@@ -112,10 +139,10 @@ def log_user_create(items: List[dict]) -> None:
         items {[dict]} -- List of user records inserted.
     """
     for new_user in items:
+        log = "New user created"
         for key in new_user:
-            log = "New user created"
             log += ", " + key + " : " + new_user[key]
-            logging.info({"message": log, "category": "FAIR-EVE-NEWUSER"})
+        logging.info({"message": log, "category": "FAIR-EVE-NEWUSER"})
 
 
 # On updated user.
@@ -183,14 +210,12 @@ def serialize_objectids(items: List[dict]) -> None:
         record["assay"] = ObjectId(record["assay"])
         record["trial"] = ObjectId(record["trial"])
         record["processed"] = False
-        log = (
-            "Record "
-            + record["file_name"]
-            + " for trial "
-            + str(record["trial"])
-            + " in assay "
-            + str(record["assay"])
-            + "uploaded"
+        record["visibility"] = True
+        record["children"] = []
+        log = "Record %s  for trial %s in assay %s uploaded" % (
+            record["file_name"],
+            str(record["trial"]),
+            str(record["assay"]),
         )
         logging.info({"message": log, "category": "INFO-EVE-DATA"})
 
@@ -210,13 +235,10 @@ def register_analysis(items: List[dict]) -> None:
             datetime.timezone.utc
         ).isoformat()
         analysis["started_by"] = get_current_user()["email"]
-        log = (
-            "Analysis starrted for trial"
-            + str(analysis["trial"])
-            + " on assay "
-            + str(analysis["assay"])
-            + " by "
-            + analysis["started_by"]
+        log = "Analysis starrted for trial %s on assay %s by %s" % (
+            str(analysis["trial"]),
+            str(analysis["assay"]),
+            analysis["started_by"],
         )
         logging.info({"message": log, "category": "INFO-EVE-DATA"})
 
@@ -359,16 +381,15 @@ def log_post_request(resource: str, request: str, payload: dict) -> None:
 
     # Log the request
     log = (
-        "Post request made against resource "
-        + resource
-        + " by user "
-        + current_user["email"]
-        + " method: "
-        + request.method
-        + " request structure: "
-        + request.url
-        + ". Patch status: "
-        + str(payload.status_code)
+        "Post request made against resource %s by user %s method: %s request structure: %s patch"
+        " status: %s"
+        % (
+            resource,
+            current_user["email"],
+            request.method,
+            request.url,
+            str(payload.status_code),
+        )
     )
     logging.info({"message": log, "category": "INFO-EVE-POST-REQUEST"})
 
@@ -390,16 +411,15 @@ def log_delete_request(resource: str, request: str, payload: dict) -> None:
 
     # Log the request
     log = (
-        "Delete request made against resource "
-        + resource
-        + " by user "
-        + current_user["email"]
-        + " method: "
-        + request.method
-        + " request structure: "
-        + request.url
-        + ". Delete status: "
-        + str(payload.status_code)
+        "Delete request made against resource %s by user %s method: %s request structure: %s"
+        " Delete status: %s"
+        % (
+            resource,
+            current_user["email"],
+            request.method,
+            request.url,
+            str(payload.status_code),
+        )
     )
     logging.info({"message": log, "category": "INFO-EVE-DELETE-REQUEST"})
 
@@ -416,7 +436,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     """
 
     # If it is a test call, don't bother filtering.
-    if resource == "test":
+    if resource in ["test", "accounts", "trials"]:
         return
 
     doc_id = None
@@ -437,16 +457,14 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
             }
         )
 
+    # Don't filter for machine.
+    if current_user["email"] == 'celery-taskmanager':
+        return
+
     # Log the request
     log = (
-        "Data request made against resource "
-        + resource
-        + " by user "
-        + current_user["email"]
-        + " method: "
-        + request.method
-        + " request structure: "
-        + request.url
+        "Data request made against resource %s by user %s method: %s request structure: %s "
+        % (resource, current_user["email"], request.method, request.url)
     )
     logging.info({"message": log, "category": "INFO-EVE-REQUEST"})
 
@@ -454,16 +472,10 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
 
     # Logic for adding the appropriate filter based on the endpoint.
     try:
-        if resource == "trials":
-            pass
-        elif resource == "ingestion":
+        if resource == "ingestion":
             lookup["started_by"] = user_id
-        elif (
-            resource in ["accounts_info", "accounts_update"] and request.method == "GET"
-        ):
+        elif resource in ["accounts_info", "accounts_update"]:
             lookup["username"] = user_id
-        elif resource in ["accounts"]:
-            pass
         else:
             accounts = app.data.driver.db["trials"]
             trials = accounts.find({"collaborators": user_id}, {"_id": 1, "assays": 1})

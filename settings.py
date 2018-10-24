@@ -109,6 +109,7 @@ DOMAIN = {
     'analysis': schemas.ANALYSIS,
     'status': schemas.ANALYSIS_STATUS,
     'data/query': schemas.DATA_AGG_INPUTS,
+    'data_edit': schemas.DATA_EDIT,
     'vcf': schemas.MAF_PT,
     'hla': schemas.HLA,
     'neoantigen': schemas.NEOANTIGEN,

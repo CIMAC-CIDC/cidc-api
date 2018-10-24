@@ -1,11 +1,20 @@
 """
-Schema for ...data?
+Data schema, each record represents a file in a google bucket.
 """
 
 DATA = {
     'public_methods': [],
-    'resource_methods': ['GET', 'POST'],
-    'allowed_roles': ['admin', 'user', 'uploader'],
+    'resource_methods': ['GET'],
+    'allowed_roles': ['admin', 'user'],
+    'datasource': {
+        'source': 'data',
+        'filter': {
+            'visibility': True
+        },
+        'projection': {
+            'visibility': 0
+        }
+    },
     'schema': {
         'file_name': {
             'type': 'string',
@@ -39,8 +48,38 @@ DATA = {
         },
         'processed': {
             'type': 'boolean'
+        },
+        'visibility': {
+            'type': 'boolean'
+        },
+        'children': {
+            'type': 'list',
+            'schema': {
+                'type': 'dict',
+                'schema': {
+                    '_id': {
+                        'type': 'string',
+                        'required': True
+                    },
+                    'resource': {
+                        'type': 'string',
+                        'required': True
+                    }
+                }
+            }
         }
     }
+}
+
+DATA_EDIT = {
+    "public_methods": [],
+    "allowed_roles": ["admin"],
+    "resource_methods": ["POST"],
+    "item_methods": ["PATCH"],
+    "datasource": {
+        'source': 'data',
+    },
+    "schema": DATA["schema"]
 }
 
 
