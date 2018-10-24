@@ -210,7 +210,7 @@ def serialize_objectids(items: List[dict]) -> None:
         record["assay"] = ObjectId(record["assay"])
         record["trial"] = ObjectId(record["trial"])
         record["processed"] = False
-        record["visibility"] = 1
+        record["visibility"] = True
         record["children"] = []
         log = "Record %s  for trial %s in assay %s uploaded" % (
             record["file_name"],
@@ -455,6 +455,10 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
                 "category": "ERROR-EVE-AUTH",
             }
         )
+
+    # Don't filter for machine.
+    if current_user["email"] == 'celery-taskmanager':
+        return
 
     # Log the request
     log = (

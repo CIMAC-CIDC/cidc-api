@@ -7,7 +7,7 @@ from schemas.analysis import ANALYSIS, ANALYSIS_STATUS
 from schemas.assays import ASSAYS
 from schemas.trials import TRIALS
 from schemas.ingestion import INGESTION
-from schemas.data import DATA, DATA_AGG_INPUTS
+from schemas.data import DATA, DATA_AGG_INPUTS, DATA_EDIT
 from schemas.MAF_data_model import MAF_PT
 from schemas.hla_schema import HLA
 from schemas.neoantigen_schema import NEOANTIGEN

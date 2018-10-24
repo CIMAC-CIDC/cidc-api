@@ -1,14 +1,18 @@
 """
-Schema for ...data?
+Data schema, each record represents a file in a google bucket.
 """
 
 DATA = {
     'public_methods': [],
-    'resource_methods': ['GET', 'POST'],
+    'resource_methods': ['GET'],
     'allowed_roles': ['admin', 'user'],
     'datasource': {
+        'source': 'data',
         'filter': {
             'visibility': True
+        },
+        'projection': {
+            'visibility': 0
         }
     },
     'schema': {
@@ -65,6 +69,17 @@ DATA = {
             }
         }
     }
+}
+
+DATA_EDIT = {
+    "public_methods": [],
+    "allowed_roles": ["admin"],
+    "resource_methods": ["POST"],
+    "item_methods": ["PATCH"],
+    "datasource": {
+        'source': 'data',
+    },
+    "schema": DATA["schema"]
 }
 
 
