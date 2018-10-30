@@ -399,6 +399,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         request {str} -- Request being sent to endpoint.
         lookup {dict} -- Filter condition.
     """
+
     # If it is a test call, don't bother filtering.
     if resource in ["test", "accounts"]:
         return
