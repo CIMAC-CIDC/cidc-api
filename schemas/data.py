@@ -58,7 +58,7 @@ DATA = {
                 'type': 'dict',
                 'schema': {
                     '_id': {
-                        'type': 'string',
+                        'type': 'objectid',
                         'required': True
                     },
                     'resource': {

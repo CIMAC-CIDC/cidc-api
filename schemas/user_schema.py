@@ -63,12 +63,12 @@ DB_USER = {
             'type': 'list',
             'schema': {
                 'assay': {
-                    'type': 'string',
+                    'type': 'objectid',
                     'required': True,
                     'nullable': True
                 },
                 'trial': {
-                    'type': 'string',
+                    'type': 'objectid',
                     'required': True,
                     'nullable': True
                 },
