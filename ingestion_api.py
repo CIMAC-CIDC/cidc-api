@@ -387,8 +387,6 @@ def add_hooks():
     """
     Adds the endpoint hooks to the application object.
     """
-    # Trial Hooks
-    APP.on_update_trial += hooks.patch_user_access
 
     # Accounts hooks
     APP.on_accounts_inserted += hooks.log_user_create
