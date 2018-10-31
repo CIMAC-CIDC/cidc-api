@@ -11,9 +11,6 @@ DATA = {
         'filter': {
             'visibility': True
         },
-        'projection': {
-            'visibility': 0
-        }
     },
     'schema': {
         'file_name': {

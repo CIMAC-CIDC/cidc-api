@@ -112,16 +112,13 @@ def data_patched(updates: dict, original: dict) -> None:
     Returns:
         None -- [description]
     """
-    o_visible = updates["visibility"]
-    n_visible = original["visibility"]
-
-    if o_visible == n_visible:
+    if updates["visibility"] == original["visibility"]:
         return
-    if o_visible < n_visible:
+    if original["visibility"] < updates["visibility"]:
         start_celery_task("framework.tasks.processing_tasks.postprocessing", [updates], 91011)
         # make visible
-    elif n_visible > o_visible:
-        children = updates["children"]
+    else:
+        children = original["children"]
         # Delete all derived records.
         for child in children:
             collection = app.data.driver.db[child["resource"]]
@@ -495,7 +492,6 @@ def get_resource(lookup: dict, permissions: List[dict]) -> None:
     Returns:
         None -- [description]
     """
-    # Clear the lookup dictionary of whatever they tried.
     conditions = []
     assay_read = []
     trial_read = []

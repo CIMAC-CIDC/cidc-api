@@ -1,7 +1,5 @@
-'''[summary]
-
-Returns:
-    [type] -- [description]
+'''
+Tools for creating eve schemas
 '''
 
 def create_biomarker_schema(schema: dict) -> dict:
