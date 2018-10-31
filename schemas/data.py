@@ -10,9 +10,6 @@ DATA = {
         'source': 'data',
         'filter': {
             'visibility': True
-        },
-        'projection': {
-            'visibility': 0
         }
     },
     'schema': {
