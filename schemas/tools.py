@@ -19,9 +19,9 @@ def create_biomarker_schema(schema: dict) -> dict:
         'resource_methods': ['GET', 'POST'],
         'allowed_roles': ['user', 'uploader', 'admin'],
         'schema': {
-            'trial': {'type': 'string', 'required': True},
-            'assay': {'type': 'string', 'required': True},
-            'record_id': {'type': 'string', 'required': True},
+            'trial': {'type': 'objectid', 'required': True},
+            'assay': {'type': 'objectid', 'required': True},
+            'record_id': {'type': 'objectid', 'required': True},
         },
     }
     base_dict['schema'].update(schema)

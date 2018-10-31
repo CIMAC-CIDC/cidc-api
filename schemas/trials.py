@@ -39,7 +39,7 @@ TRIALS = {
                         'required': True
                     },
                     'assay_id': {
-                        'type': 'string',
+                        'type': 'objectid',
                         'required': True
                     },
                 }
