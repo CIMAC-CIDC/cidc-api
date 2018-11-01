@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
-
-from schemas import create_biomarker_schema
+"""[summary]
+"""
 
 CLINICAL_1021 = {
     'public_methods': [],

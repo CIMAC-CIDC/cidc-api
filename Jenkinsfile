@@ -31,6 +31,9 @@ spec:
   }
   environment {
       GOOGLE_APPLICATION_CREDENTIALS = credentials('google-service-account')
+      CA_CERT_PEM = credentials("ca.cert.pem")
+      HELM_CERT_PEM = credentials("helm.cert.pem")
+      HELM_KEY_PEM = credentials("helm.key.pem")
   }
   stages {
     stage('Checkout SCM') {
@@ -83,11 +86,13 @@ spec:
       steps {
         container('gcloud') {
           sh 'gcloud container clusters get-credentials cidc-cluster-staging --zone us-east1-c --project cidc-dfci'
-          sh 'curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh'
           sh 'helm init --client-only'
+          sh 'cat ${CA_CERT_PEM} > $(helm home)/ca.pem'
+          sh 'cat ${HELM_CERT_PEM} > $(helm home)/cert.pem'
+          sh 'cat ${HELM_KEY_PEM} > $(helm home)/key.pem'
           sh 'helm repo add cidc "http://${CIDC_CHARTMUSEUM_SERVICE_HOST}:${CIDC_CHARTMUSEUM_SERVICE_PORT}" '
           sh 'sleep 10'
-          sh '''helm upgrade ingestion-api cidc/ingestion-api --version=0.1.0-staging --set imageSHA=$(gcloud container images list-tags --format="get(digest)" --filter="tags:staging" gcr.io/cidc-dfci/ingestion-api) --set image.tag=staging'''
+          sh '''helm upgrade ingestion-api cidc/ingestion-api --version=0.1.0-staging --set imageSHA=$(gcloud container images list-tags --format="get(digest)" --filter="tags:staging" gcr.io/cidc-dfci/ingestion-api) --set image.tag=staging --tls'''
         }
       }
     }

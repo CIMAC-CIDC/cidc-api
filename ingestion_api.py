@@ -20,7 +20,7 @@ from flask_oauthlib.client import OAuth
 from jose import jwt
 
 import hooks
-from constants import (
+from settings import (
     ALGORITHMS,
     AUTH0_AUDIENCE,
     AUTH0_CLIENT_ID,
@@ -401,6 +401,9 @@ def add_hooks():
     # Data Hooks
     APP.on_insert_data += hooks.serialize_objectids
     APP.on_inserted_data += hooks.check_for_analysis
+    APP.on_updated_data += hooks.data_patched
+    APP.on_inserted_data_edit += hooks.check_for_analysis
+    APP.on_insert_data_edit += hooks.serialize_objectids
 
     # Analysis Hooks
     APP.on_insert_analysis += hooks.register_analysis
