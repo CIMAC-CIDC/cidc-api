@@ -114,6 +114,7 @@ def data_patched(updates: dict, original: dict) -> None:
     """
     if updates["visibility"] == original["visibility"]:
         return
+
     if original["visibility"] < updates["visibility"]:
         start_celery_task("framework.tasks.processing_tasks.postprocessing", [updates], 91011)
         # make visible
@@ -123,7 +124,9 @@ def data_patched(updates: dict, original: dict) -> None:
         for child in children:
             collection = app.data.driver.db[child["resource"]]
             collection.remove({"_id": child["_id"]})
-        # make invisible
+
+        logging.info({"message": "Visibility change required the deletion of records.",
+                      "category": "FAIR-EVE-DELETECHILDREN"})
 
 
 # On-inserted user.

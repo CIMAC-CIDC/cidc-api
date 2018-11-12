@@ -5,7 +5,7 @@ Data schema, each record represents a file in a google bucket.
 DATA = {
     'public_methods': [],
     'resource_methods': ['GET'],
-    'allowed_roles': ['admin', 'user'],
+    'allowed_roles': ['admin', 'user', 'uploader'],
     'datasource': {
         'source': 'data',
         'filter': {

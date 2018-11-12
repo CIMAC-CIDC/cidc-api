@@ -94,7 +94,7 @@ DB_ACCOUNTS_INFO = {
         'username': {
             'type': 'string'
         },
-        'e-mail': {
+        'email': {
             'type': 'string'
         },
         'organization': {
