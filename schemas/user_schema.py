@@ -58,7 +58,27 @@ DB_USER = {
         'position_description': {
             'type': 'string',
             'required': False
-        }
+        },
+        'permissions': {
+            'type': 'list',
+            'schema': {
+                'assay': {
+                    'type': 'objectid',
+                    'required': True,
+                    'nullable': True
+                },
+                'trial': {
+                    'type': 'objectid',
+                    'required': True,
+                    'nullable': True
+                },
+                'role': {
+                    'allowed': ['read', 'write', 'trial_r', 'trial_w', 'assay_r', 'assay_w'],
+                    'required': 'True',
+                    'type': 'string'
+                }
+            }
+        },
     }
 }
 

@@ -104,15 +104,15 @@ def check_for_analysis(items: List[dict]) -> None:
 def data_patched(updates: dict, original: dict) -> None:
     """
     Hook to watch for changes to data records, specifically visibility changes.
-    
+
     Arguments:
         updates {dict} -- [description]
         original {dict} -- [description]
-    
+
     Returns:
         None -- [description]
     """
-    if original["visibility"] == updates["visibility"]:
+    if updates["visibility"] == original["visibility"]:
         return
 
     if original["visibility"] < updates["visibility"]:
@@ -140,7 +140,7 @@ def log_user_create(items: List[dict]) -> None:
     for new_user in items:
         log = "New user created"
         for key in new_user:
-            log += ", " + key + " : " + new_user[key]
+            log += ", %s : %s" % (key, new_user[key])
         logging.info({"message": log, "category": "FAIR-EVE-NEWUSER"})
 
 
@@ -161,40 +161,6 @@ def log_user_modified(updates: dict, original: dict) -> None:
     for update in updates:
         log += "Changed: %s\n" % json.dumps(update)
     logging.info({"message": log, "category": "FAIR-EVE-USER-PATCHED"})
-
-
-# On update trial
-def patch_user_access(updates: dict, original: dict) -> None:
-    """
-    When a trial object is updated, if the list of collaborators changes,
-    propagates the changes to modify google storage permissions.
-
-    Arguments:
-        updates {dict} -- Updates to trial object.
-        original {dict} -- Original record.
-    """
-    same = len(updates["collaborators"]) == len(original["collaborators"])
-    deduped = len(updates["collaborators"]) == len(set(updates["collaborators"]))
-
-    log = "Collab update validation error"
-
-    if not same or not deduped:
-        if not same:
-            log += " Old and new list have the same length."
-        if not deduped:
-            log += " Duplicate items found in list."
-
-        log += " Update not performed."
-        logging.warning({"message": log, "category": "WARNING-EVE-FAIR-UPDATE-TRIAL"})
-        abort(500, "Collaborators list validation error")
-
-    if "collaborators" in updates:
-        n_col = updates["collaborators"]
-        start_celery_task(
-            "framework.tasks.administrative_tasks.update_trial_blob_acl",
-            [original["_id"], n_col],
-            7889,
-        )
 
 
 # On insert data.
@@ -380,7 +346,7 @@ def log_post_request(resource: str, request: str, payload: dict) -> None:
 
     # Log the request
     log = (
-        "Post request made against resource %s by user %s method: %s request structure: %s patch"
+        "Post request made against resource %s by user %s method: %s request structure: %s "
         " status: %s"
         % (
             resource,
@@ -435,7 +401,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     """
 
     # If it is a test call, don't bother filtering.
-    if resource in ["test", "accounts", "trials"]:
+    if resource in ["test", "accounts"]:
         return
 
     doc_id = None
@@ -470,29 +436,98 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     user_id = current_user["email"]
 
     # Logic for adding the appropriate filter based on the endpoint.
-    try:
-        if resource == "ingestion":
-            lookup["started_by"] = user_id
-        elif resource in ["accounts_info", "accounts_update"]:
-            lookup["username"] = user_id
-        else:
-            accounts = app.data.driver.db["trials"]
-            trials = accounts.find({"collaborators": user_id}, {"_id": 1, "assays": 1})
-            if resource == "assays":
-                # Get the list of assay_ids the user is cleared to know about.
-                assay_ids = [
-                    str(x["assay_id"]) for trial in trials for x in trial["assays"]
-                ]
-                if not doc_id:
-                    lookup["_id"] = {"$in": assay_ids}
-                elif doc_id not in assay_ids:
-                    abort(500, "You are not cleared to view this item")
-            else:
-                trial_ids = [str(x["_id"]) for x in trials]
-                lookup["trial"] = {"$in": trial_ids}
-    except TypeError:
-        logging.error(
-            {"message": "Error applying filters", "category": "ERROR-EVE-REQUEST"},
-            exc_info=True,
-        )
-        abort(500, "There was an error processing your viewable data.")
+    if resource == "ingestion":
+        lookup["started_by"] = user_id
+    elif resource == "trials":
+        lookup["collaborators"] = user_id
+    elif resource in ["accounts_info", "accounts_update"]:
+        lookup["username"] = user_id
+    else:
+        accounts = app.data.driver.db["accounts"]
+        perms = accounts.find_one({"email": user_id}, {"permissions": 1})["permissions"]
+        if not doc_id:
+            get_resource(lookup, perms)
+        elif not get_document(doc_id, resource, perms):
+            lookup["find"] = "nothing"
+
+
+# Get id document
+def get_document(_id: str, resource: str, permissions: List[dict]) -> bool:
+    """
+    Method for determining if a user is allowed to see a specific document.
+
+    Arguments:
+        _id {str} -- Id of the document.
+        resource {str} -- Resource endpoint.
+        permissions {List[dict]} -- User's permissions list.
+    
+    Returns:
+        bool -- True if they are allowed to see it, else false.
+    """
+    resource_coll = app.data.driver.db[resource]
+    document = resource_coll.find_one({"_id": _id})
+    # If there is no document, no need to filter.
+    if not document:
+        return True
+
+    for permission in permissions:
+        trial_match = (document["trial"] == permission["trial"])
+        assay_match = (document["assay"] == permission["assay"])
+        if trial_match and assay_match:
+            return True
+        if trial_match and permission["role"] == "trial_r":
+            return True
+        if assay_match and permission["role"] == "assay_r":
+            return True
+
+    return False
+
+
+# Get on a resource, not a specific document, e.g. /olink?where={"trial":"12345", "assay": "679"}
+def get_resource(lookup: dict, permissions: List[dict]) -> None:
+    """
+    Filters requests against a resource endpoint.
+
+    Arguments:
+        lookup {dict} -- [description]
+        permissions {List[dict]} -- [description]
+
+    Returns:
+        None -- [description]
+    """
+    conditions = []
+    assay_read = []
+    trial_read = []
+
+    for permission in permissions:
+        # If they have a broad role.
+        if permission["role"] == 'trial_r':
+            # note the ID.
+            trial_read.append(permission["trial"])
+            # check if the filter is redundant
+            if "trial" in lookup and lookup["trial"] != permission["trial"]:
+                # If not, apply
+                conditions.append({
+                    "trial": permission["trial"]
+                })
+        if permission["role"] == 'assay_r':
+            assay_read.append(permission["assay"])
+            if "assay" in lookup and lookup["assay"] != permission["assay"]:
+                conditions.append({
+                    "assay": permission["assay"]
+                })
+
+    for permission in permissions:
+        if permission["role"] == 'read':
+            # Check to see if rule is redundant.
+            if permission["trial"] not in trial_read and permission["assay"] not in assay_read:
+                conditions.append({
+                    "trial": permission["trial"],
+                    "assay": permission["assay"]
+                })
+
+    # Only add the lookup key if there are any conditions to add.
+    if conditions:
+        lookup["$or"] = conditions
+    else:
+        lookup["find"] = "nothing"

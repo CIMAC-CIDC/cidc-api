@@ -10,7 +10,7 @@ DATA = {
         'source': 'data',
         'filter': {
             'visibility': True
-        }
+        },
     },
     'schema': {
         'file_name': {
