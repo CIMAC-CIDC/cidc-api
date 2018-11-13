@@ -19,8 +19,14 @@ def get_current_user():
     Returns:
         str -- User GID
     """
-    current_user = _request_ctx_stack.top.current_user
-    return current_user
+    # Try to get the user twice in case of any weird sync issues. 
+    for i in range(2):
+        try:
+            current_user = _request_ctx_stack.top.current_user
+            return current_user
+        except AttributeError:
+            pass
+    raise AttributeError("Unable to find a user")
 
 
 def find_duplicates(items: List[dict]) -> List[str]:
@@ -106,8 +112,8 @@ def data_patched(updates: dict, original: dict) -> None:
     Hook to watch for changes to data records, specifically visibility changes.
 
     Arguments:
-        updates {dict} -- [description]
-        original {dict} -- [description]
+        updates {dict} -- Updates being made to the record.
+        original {dict} -- Original record.
 
     Returns:
         None -- [description]
@@ -166,7 +172,7 @@ def serialize_objectids(items: List[dict]) -> None:
     Transforms the ID strings into ObjectID objects for propper mapping.
 
     Arguments:
-        items {[dict]} -- List of data records.
+        items {List[dict]} -- List of data records.
     """
     for record in items:
         record["assay"] = ObjectId(record["assay"])
@@ -189,7 +195,7 @@ def register_analysis(items: List[dict]) -> None:
     each analysis object that is being inserted.
 
     Arguments:
-        items {[dict]} -- List of analysis records.
+        items {List[dict]} -- List of analysis records.
     """
     for analysis in items:
         analysis["status"] = {"progress": "In Progress", "message": ""}
@@ -205,13 +211,13 @@ def register_analysis(items: List[dict]) -> None:
         logging.info({"message": log, "category": "INFO-EVE-DATA"})
 
 
-def start_celery_task(task: str, arguments: object, task_id: int) -> None:
+def start_celery_task(task: str, arguments: List[object], task_id: int) -> None:
     """
     Generic function to start a task through celery
 
     Arguments:
         task {string} -- Name of the task to start.
-        arguments {[object]} -- List of arguments to be supplied.
+        arguments {List[object]} -- List of arguments to be supplied.
         id {int} -- Integer ID to uniquely identify the string.
     """
     task_exchange = Exchange("", type="direct")
@@ -282,7 +288,7 @@ def log_file_patched(items: List[dict]) -> None:
     Logs when the job has been updated with google URIs
 
     Arguments:
-        items {[dict]} -- Items affected by operation.
+        items {List[dict]} -- Items affected by operation.
     """
     for item in items:
         message = "Google Upload for item: " + str(item) + " completed."
@@ -457,7 +463,7 @@ def get_document(_id: str, resource: str, permissions: List[dict]) -> bool:
         _id {str} -- Id of the document.
         resource {str} -- Resource endpoint.
         permissions {List[dict]} -- User's permissions list.
-    
+
     Returns:
         bool -- True if they are allowed to see it, else false.
     """

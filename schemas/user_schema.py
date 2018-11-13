@@ -53,7 +53,8 @@ DB_USER = {
         },
         'role': {
             'allowed': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer', 'disabled'],
-            'type': 'string'
+            'type': 'string',
+            'required': True
         },
         'position_description': {
             'type': 'string',
@@ -74,7 +75,7 @@ DB_USER = {
                 },
                 'role': {
                     'allowed': ['read', 'write', 'trial_r', 'trial_w', 'assay_r', 'assay_w'],
-                    'required': 'True',
+                    'required': True,
                     'type': 'string'
                 }
             }
