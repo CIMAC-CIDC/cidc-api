@@ -9,7 +9,7 @@ from typing import List
 from bson import json_util, ObjectId
 from flask import current_app as app, abort, _request_ctx_stack
 from kombu import Connection, Exchange, Producer
-from settings import RABBIT_MQ_ADDRESS
+from settings import RABBIT_MQ_ADDRESS, GOOGLE_UPLOAD_BUCKET
 
 
 def get_current_user():
@@ -19,7 +19,7 @@ def get_current_user():
     Returns:
         str -- User GID
     """
-    # Try to get the user twice in case of any weird sync issues. 
+    # Try to get the user twice in case of any weird sync issues.
     for i in range(2):
         try:
             current_user = _request_ctx_stack.top.current_user
@@ -38,7 +38,7 @@ def find_duplicates(items: List[dict]) -> List[str]:
         items {[dict]} -- Data records
 
     Returns:
-        [str] -- List of duplicate filenames.
+        List[str] -- List of duplicate filenames.
     """
     query = {"$or": []}
 
@@ -66,17 +66,22 @@ def register_upload_job(items: List[dict]) -> None:
         item {[dict]} -- Upload record
     """
     files = []
+    current_user = None
+    try:
+        current_user = get_current_user()["email"]
+    except AttributeError:
+        current_user = "<User Undefined>"
+
     for record in items:
         record["start_time"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        record["started_by"] = get_current_user()["email"]
-        log = "Upload job started by" + record["started_by"]
-        logging.info({"message": log, "category": "FAIR-EVE-RECORD"})
+        record["started_by"] = current_user
+        log = "Upload job started by: %s\n" % current_user
         for data_item in record["files"]:
-            item_log = "Concerning trial: %s On Assay: %s" % (
+            log += "Concerning trial: %s On Assay: %s\n" % (
                 str(data_item["trial"]),
                 str(data_item["assay"]),
             )
-            logging.info({"message": item_log, "category": "FAIR-EVE-RECORD"})
+            logging.info({"message": log, "category": "FAIR-EVE-RECORD"})
             files.append(data_item)
             data_item["assay"] = ObjectId(data_item["assay"])
             data_item["trial"] = ObjectId(data_item["trial"])
@@ -121,15 +126,16 @@ def data_patched(updates: dict, original: dict) -> None:
     if updates["visibility"] == original["visibility"]:
         return
     if original["visibility"] < updates["visibility"]:
-        start_celery_task("framework.tasks.processing_tasks.postprocessing", [updates], 91011)
-        # make visible
-    else:
-        children = original["children"]
-        # Delete all derived records.
-        for child in children:
-            collection = app.data.driver.db[child["resource"]]
-            collection.remove({"_id": child["_id"]})
-        # make invisible
+        start_celery_task(
+            "framework.tasks.processing_tasks.postprocessing", [updates], 91011
+        )
+        return
+
+    children = original["children"]
+    # Delete all derived records.
+    for child in children:
+        collection = app.data.driver.db[child["resource"]]
+        collection.remove({"_id": child["_id"]})
 
 
 # On-inserted user.
@@ -138,7 +144,7 @@ def log_user_create(items: List[dict]) -> None:
     Hook for posts to user endpoint, logs creation of user.
 
     Arguments:
-        items {[dict]} -- List of user records inserted.
+        items {List[dict]} -- List of user records inserted.
     """
     for new_user in items:
         log = "New user created"
@@ -156,6 +162,11 @@ def log_user_modified(updates: dict, original: dict) -> None:
         updates {dict} -- Updates made to the user's record.
         original {dict} -- State of the user record before alteration.
     """
+    current_user = None
+    try:
+        current_user = get_current_user()
+    except AttributeError:
+        current_user = ""
     current_user = get_current_user()
     log = "Update to user %s made by %s: \n" % (
         original["email"],
@@ -163,6 +174,23 @@ def log_user_modified(updates: dict, original: dict) -> None:
     )
     for update in updates:
         log += "Changed: %s\n" % json.dumps(update)
+
+    if "role" in updates:
+        if updates["role"] == "uploader" and original["role"] == "registrant":
+            # Grant upload access
+            start_celery_task(
+                "framework.tasks.administrative_tasks.change_upload_permission",
+                [GOOGLE_UPLOAD_BUCKET, [original["email"]], True],
+                8787878,
+            )
+        if updates["role"] == "disabled":
+            # Revoke upload access
+            start_celery_task(
+                "framework.tasks.administrative_tasks.call_deactivate_account",
+                [original, False],
+                515151,
+            )
+
     logging.info({"message": log, "category": "FAIR-EVE-USER-PATCHED"})
 
 
@@ -222,14 +250,13 @@ def start_celery_task(task: str, arguments: List[object], task_id: int) -> None:
     """
     task_exchange = Exchange("", type="direct")
     connection = Connection(RABBIT_MQ_ADDRESS)
-    channel = connection.channel()
-
-    # Generate Producer
     producer = Producer(
-        exchange=task_exchange, channel=channel, routing_key="celery", serializer="json"
+        exchange=task_exchange,
+        channel=connection.channel(),
+        routing_key="celery",
+        serializer="json",
     )
 
-    # Construct data
     # is the task ID necessary here?
     payload = {
         "id": task_id,
@@ -239,14 +266,11 @@ def start_celery_task(task: str, arguments: List[object], task_id: int) -> None:
         "retries": 0,
     }
 
-    # Send data
     producer.publish(
         json.dumps(payload, default=json_util.default),
         content_type="application/json",
         content_encoding="utf-8",
     )
-
-    # Close Connection
     connection.release()
 
 
@@ -323,7 +347,7 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
                 str(payload.status_code),
             )
         )
-        logging.info({"message": log, "category": "INFO-EVE-PATCH-REQUEST"})
+        logging.info({"mmessage": log, "category": "INFO-EVE-PATCH-REQUEST"})
     except TypeError:
         log = {
             "Patch request failed for resource %s, by user %s."
@@ -346,8 +370,6 @@ def log_post_request(resource: str, request: str, payload: dict) -> None:
     """
     # Get current user.
     current_user = get_current_user()
-
-    # Log the request
     log = (
         "Post request made against resource %s by user %s method: %s request structure: %s "
         " status: %s"
@@ -426,7 +448,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         )
 
     # Don't filter for machine.
-    if current_user["email"] == 'celery-taskmanager':
+    if current_user["email"] == "celery-taskmanager":
         return
 
     # Log the request
@@ -474,8 +496,8 @@ def get_document(_id: str, resource: str, permissions: List[dict]) -> bool:
         return True
 
     for permission in permissions:
-        trial_match = (document["trial"] == permission["trial"])
-        assay_match = (document["assay"] == permission["assay"])
+        trial_match = document["trial"] == permission["trial"]
+        assay_match = document["assay"] == permission["assay"]
         if trial_match and assay_match:
             return True
         if trial_match and permission["role"] == "trial_r":
@@ -504,30 +526,28 @@ def get_resource(lookup: dict, permissions: List[dict]) -> None:
 
     for permission in permissions:
         # If they have a broad role.
-        if permission["role"] == 'trial_r':
+        if permission["role"] == "trial_r":
             # note the ID.
             trial_read.append(permission["trial"])
             # check if the filter is redundant
             if "trial" in lookup and lookup["trial"] != permission["trial"]:
                 # If not, apply
-                conditions.append({
-                    "trial": permission["trial"]
-                })
-        if permission["role"] == 'assay_r':
+                conditions.append({"trial": permission["trial"]})
+        if permission["role"] == "assay_r":
             assay_read.append(permission["assay"])
             if "assay" in lookup and lookup["assay"] != permission["assay"]:
-                conditions.append({
-                    "assay": permission["assay"]
-                })
+                conditions.append({"assay": permission["assay"]})
 
     for permission in permissions:
-        if permission["role"] == 'read':
+        if permission["role"] == "read":
             # Check to see if rule is redundant.
-            if permission["trial"] not in trial_read and permission["assay"] not in assay_read:
-                conditions.append({
-                    "trial": permission["trial"],
-                    "assay": permission["assay"]
-                })
+            if (
+                permission["trial"] not in trial_read
+                and permission["assay"] not in assay_read
+            ):
+                conditions.append(
+                    {"trial": permission["trial"], "assay": permission["assay"]}
+                )
 
     # Only add the lookup key if there are any conditions to add.
     if conditions:
