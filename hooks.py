@@ -125,6 +125,7 @@ def data_patched(updates: dict, original: dict) -> None:
     """
     if updates["visibility"] == original["visibility"]:
         return
+
     if original["visibility"] < updates["visibility"]:
         start_celery_task(
             "framework.tasks.processing_tasks.postprocessing", [updates], 91011
