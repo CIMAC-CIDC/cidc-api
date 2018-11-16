@@ -63,20 +63,23 @@ DB_USER = {
         'permissions': {
             'type': 'list',
             'schema': {
-                'assay': {
-                    'type': 'objectid',
-                    'required': True,
-                    'nullable': True
-                },
-                'trial': {
-                    'type': 'objectid',
-                    'required': True,
-                    'nullable': True
-                },
-                'role': {
-                    'allowed': ['read', 'write', 'trial_r', 'trial_w', 'assay_r', 'assay_w'],
-                    'required': True,
-                    'type': 'string'
+                'type': 'dict',
+                'schema': {
+                    'assay': {
+                        'type': 'objectid',
+                        'required': True,
+                        'nullable': True
+                    },
+                    'trial': {
+                        'type': 'objectid',
+                        'required': True,
+                        'nullable': True
+                    },
+                    'role': {
+                        'allowed': ['read', 'write', 'trial_r', 'trial_w', 'assay_r', 'assay_w'],
+                        'required': True,
+                        'type': 'string'
+                    }
                 }
             }
         },
@@ -93,10 +96,13 @@ DB_ACCOUNTS_INFO = {
     },
     'schema': {
         'username': {
-            'type': 'string'
+            'type': 'string',
+            'unique': True
         },
         'email': {
-            'type': 'string'
+            'type': 'string',
+            'regex': r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
+            'unique': True
         },
         'organization': {
             'type': 'string'
@@ -137,7 +143,8 @@ DB_ACCOUNTS_UPDATE = {
         'preferred_contact_email': {
             'type': 'string',
             'regex': r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
-            'required': True
+            'required': True,
+            'unique': True
         },
         'organization': {
             'type': 'string',
