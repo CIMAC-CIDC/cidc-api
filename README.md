@@ -1,5 +1,3 @@
-[![Build Status](http://35.229.46.114/jenk/job/API%20Repo/job/master/badge/icon)](http://35.229.46.114/jenk/job/API%20Repo/job/master/)
-
 ## Ingestion API
 
 Python-EVE powered API for CIDC bioinformatics pipeline. This API is designed to be used with a CLI tool dsitributed to bioinformaticians. 
