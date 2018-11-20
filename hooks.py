@@ -95,7 +95,7 @@ def register_upload_job(items: List[dict]) -> None:
                 "category": "ERROR-EVE-REQUEST",
             }
         )
-        abort(500, "Upload aborted, duplicate files found")
+        abort(409, "Upload aborted, duplicate files found")
 
 
 # On inserted data.
@@ -137,6 +137,39 @@ def data_patched(updates: dict, original: dict) -> None:
     for child in children:
         collection = app.data.driver.db[child["resource"]]
         collection.remove({"_id": child["_id"]})
+
+
+# On-update data-vis
+def user_visibility_toggle(updates, original) -> None:
+    """
+    Function for checking if a user has the permission to edit a document.
+
+    Arguments:
+        updates {dict} -- Updates, in this case just the visibility toggle.
+        original {dict} -- Original record.
+
+    Returns:
+        None -- [description]
+    """
+    current_user = get_current_user()
+    accounts = app.data.driver.db["accounts"]
+    perms = accounts.find_one({"email": current_user["email"]}, {"permissions": 1})[
+        "permissions"
+    ]
+    # Check if the user has permissions on this document.
+    allowed = get_document(original["_id"], "data", perms)
+    document = app.data.driver.db["data"].find_one({"_id": original["_id"]})
+
+    # If not, abort, else pass it along to the patch handler.
+    if not allowed:
+        log = (
+            "User: %s attempted to toggle visibility on document %s, permission denied"
+            % (current_user["email"], original["file_name"])
+        )
+        logging.error({"message": log, "category": "ERROR-EVE-PATCH-PERMISSION"})
+        abort(401, "You do not have permission to perform this aciton")
+    else:
+        data_patched(updates, document)
 
 
 # On-inserted user.

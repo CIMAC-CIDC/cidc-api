@@ -379,6 +379,7 @@ def add_hooks():
     APP.on_updated_data += hooks.data_patched
     APP.on_inserted_data_edit += hooks.check_for_analysis
     APP.on_insert_data_edit += hooks.serialize_objectids
+    APP.on_update_data_vis += hooks.user_visibility_toggle
 
     # Analysis Hooks
     APP.on_insert_analysis += hooks.register_analysis

@@ -79,6 +79,23 @@ DATA_EDIT = {
     "schema": DATA["schema"]
 }
 
+DATA_TOGGLE_VIS = {
+    "public_methods": [],
+    "allowed_roles": ["admin", "user", "uploader"],
+    "resource_methods": ["GET"],
+    "item_methods": ["PATCH"],
+    "datasource": {
+        "source": "data",
+        "projection": {
+            "visibility": 1
+        }
+    },
+    "schema": {
+        "visibility": {
+            "type": "boolean"
+        }
+    }
+}
 
 DATA_AGG_INPUTS = {
     'datasource': {
