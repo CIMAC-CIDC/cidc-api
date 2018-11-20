@@ -5,7 +5,7 @@ Configures and runs the API.
 import datetime
 import json
 import logging
-from typing import List
+from typing import List, Tuple
 from urllib.request import urlopen
 import redis
 
@@ -38,16 +38,18 @@ class BearerAuth(TokenAuth):
         BasicAuth {[type]} -- [description]
     """
 
-    def check_auth(self, token, allowed_roles, resource, method):
+    def check_auth(
+        self, token: dict, allowed_roles: List[str], resource: str, method: str
+    ) -> Tuple[str, str]:
         """
         Validates the user's token and ensures that they have the appropriate validation to use
         the given endpoint.
 
         Arguments:
             token {dict} -- JWT token.
-            allowed_roles {[str]} -- Array of strings of user roles.
-            resource {string} -- Endpoint being accessed.
-            method {[type]} -- [description]
+            allowed_roles {List[str]} -- Array of strings of user roles.
+            resource {str} -- Endpoint being accessed.
+            method {str} -- HTTP method (GET, POST, PATCH, DELETE)
         """
 
         email = token_auth(token)
@@ -130,7 +132,6 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
             resource,
             email,
         )
-        logging.info({"message": log, "category": "FAIR-EVE-LOGIN"})
         if not resource == "accounts":
             accounts.update(
                 {"_id": account["_id"]},
@@ -143,11 +144,11 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
                 },
             )
 
-            log = "User: " + email + " last login updated"
-            logging.info({"message": log, "category": "FAIR-EVE-LOGIN"})
+            log = "User: %s last login updated" % email
     else:
-        log = "failed permissions check for: " + email
-        logging.info({"message": log, "category": "FAIR-EVE-LOGIN"})
+        log = "failed permissions check for: %s" % email
+
+    logging.info({"message": log, "category": "FAIR-EVE-LOGIN"})
     return account
 
 
@@ -157,12 +158,11 @@ def ensure_user_account_exists(email_address: str) -> None:
     This is useful for novel signups that we can't check a role for yet,
     because the account doesn't exist. Default the role and applicable dates.
 
-    :param email_address:
-    :return:
+    Arguments:
+        email {str} -- User email address.
     """
     db_accounts = APP.data.driver.db["accounts"]
-    lookup = {"username": email_address}
-    lookup_account = db_accounts.find_one(lookup)
+    lookup_account = db_accounts.find_one({"username": email_address})
 
     if not lookup_account:
         db_accounts.insert(
@@ -181,22 +181,20 @@ def ensure_user_account_exists(email_address: str) -> None:
         logging.info({"message": log, "category": "INFO-EVE-LOGIN"})
 
 
-def token_auth(token):
+def token_auth(token: dict) -> str:
     """
     Checks if the supplied token is valid.
 
     Arguments:
-        token {[type]} -- [description]
+        token {dict} -- JWT token.
 
     Raises:
         AuthError -- [description]
 
     Returns:
-        [type] -- [description]
+        str -- Authorized user's email.
     """
-    json_url = "https://" + AUTH0_DOMAIN + "/.well-known/jwks.json"
-    jsonurl = urlopen(json_url)
-    jwks = json.loads(jsonurl.read())
+    jwks = json.loads(urlopen("https://%s/.well-known/jwks.json" % AUTH0_DOMAIN).read())
 
     if not token:
         logging.warning(
@@ -227,100 +225,77 @@ def token_auth(token):
                 "n": key["n"],
                 "e": key["e"],
             }
-    if rsa_key:
 
-        # Extract audience and see if it's either the
-        # ingestion APIs audience or the Portal's.
-        # This enables us to validate portal's tokens.
-        jwt_aud = jwt.get_unverified_claims(token)["aud"]
+    if not rsa_key:
+        raise AuthError({"code": "no_rsa_key", "description": "rsa_key is null"}, 401)
 
-        audience_to_verify = AUTH0_AUDIENCE
-        request_from_portal = False
+    # Extract audience and see if it's either the
+    # ingestion APIs audience or the Portal's.
+    # This enables us to validate portal's tokens.
+    jwt_aud = jwt.get_unverified_claims(token)["aud"]
 
-        if AUTH0_PORTAL_AUDIENCE is not None and jwt_aud == AUTH0_PORTAL_AUDIENCE:
-            audience_to_verify = AUTH0_PORTAL_AUDIENCE
-            request_from_portal = True
+    audience_to_verify = AUTH0_AUDIENCE
+    request_from_portal = False
 
-        try:
-            payload = jwt.decode(
-                token,
-                rsa_key,
-                algorithms=ALGORITHMS,
-                audience=audience_to_verify,
-                issuer="https://" + AUTH0_DOMAIN + "/",
-            )
-        except jwt.ExpiredSignatureError:
+    if AUTH0_PORTAL_AUDIENCE and jwt_aud == AUTH0_PORTAL_AUDIENCE:
+        audience_to_verify = AUTH0_PORTAL_AUDIENCE
+        request_from_portal = True
+
+    try:
+        payload = jwt.decode(
+            token,
+            rsa_key,
+            algorithms=ALGORITHMS,
+            audience=audience_to_verify,
+            issuer="https://%s/" % AUTH0_DOMAIN,
+        )
+    except jwt.ExpiredSignatureError:
+        logging.error(
+            {"message": "Expired Signature Error", "category": "ERROR-EVE-AUTH"}
+        )
+        raise AuthError(
+            {"code": "token_expired", "description": "token is expired"}, 401
+        )
+    except jwt.JWTClaimsError:
+        logging.error(
+            {"message": "JWT Claims error", "category": "ERROR-EVE-AUTH"},
+            exc_info=True,
+        )
+        raise AuthError(
+            {
+                "code": "invalid_claims",
+                "description": "incorrect claims, please check the audience and issuer",
+            },
+            401,
+        )
+
+    # Get user email from userinfo endpoint.
+    _request_ctx_stack.top.current_user = payload
+    if request_from_portal:
+        ensure_user_account_exists(payload["email"])
+    elif "gty" not in payload:
+        res = requests.get(
+            "https://%s/userinfo" % AUTH0_DOMAIN,
+            headers={"Authorization": "Bearer {}".format(token)},
+        )
+        if not res.status_code == 200:
             logging.error(
-                {"message": "Expired Signature Error", "category": "ERROR-EVE-AUTH"}
-            )
-            raise AuthError(
-                {"code": "token_expired", "description": "token is expired"}, 401
-            )
-        except jwt.JWTClaimsError:
-            logging.error(
-                {"message": "JWT Claims error", "category": "ERROR-EVE-AUTH"},
-                exc_info=True,
-            )
-            raise AuthError(
                 {
-                    "code": "invalid_claims",
-                    "description": "incorrect claims, please check the audience and issuer",
-                },
+                    "message": "There was an error fetching user information",
+                    "category": "ERROR-EVE-AUTH",
+                }
+            )
+            raise AuthError(
+                {"code": "No_info", "description": "No userinfo found at endpoint"},
                 401,
             )
-        except Exception:
-            logging.error(
-                {"message": "Unspecified Auth Error", "category": "ERROR-EVE-AUTH"},
-                exc_info=True,
-            )
-            raise AuthError(
-                {
-                    "code": "invalid_header",
-                    "description": "Unable to parse authentication token.",
-                },
-                401,
-            )
+        payload["email"] = res.json()["email"]
+    else:
+        payload["email"] = "celery-taskmanager"
 
-        # Get user email from userinfo endpoint.
-        if request_from_portal:
-            _request_ctx_stack.top.current_user = payload
-
-            ensure_user_account_exists(payload["email"])
-
-            log = "Authenticated user: " + payload["email"]
-            logging.info({"message": log, "category": "EVE-LOGIN"})
-
-            return payload["email"]
-        elif "gty" not in payload:
-            res = requests.get(
-                "https://" + AUTH0_DOMAIN + "/userinfo",
-                headers={"Authorization": "Bearer {}".format(token)},
-            )
-
-            if not res.status_code == 200:
-                logging.error(
-                    {
-                        "message": "There was an error fetching user information",
-                        "category": "ERROR-EVE-AUTH",
-                    }
-                )
-                raise AuthError(
-                    {"code": "No_info", "description": "No userinfo found at endpoint"},
-                    401,
-                )
-
-            payload["email"] = res.json()["email"]
-            _request_ctx_stack.top.current_user = payload
-            log = "Authenticated user: " + payload["email"]
-            logging.info({"message": log, "category": "FAIR-EVE-LOGIN"})
-            return payload["email"]
-        else:
-            payload["email"] = "celery-taskmanager"
-            _request_ctx_stack.top.current_user = payload
-            return payload["email"]
-    raise AuthError(
-        {"code": "invalid_header", "description": "Unable to find appropriate key"}, 401
-    )
+    log = "Authenticated user: " + payload["email"]
+    logging.info({"message": log, "category": "FAIR-EVE-LOGIN"})
+    return payload["email"]
 
 
 @APP.after_request
@@ -339,7 +314,7 @@ def after_request(response):
         dict -- HTTP response with modified headers.
     """
     response.headers.add("google_url", APP.config["GOOGLE_URL"])
-    response.headers.add("google_folder_path", APP.config["GOOGLE_FOLDER_PATH"])
+    response.headers.add("google_folder_path", APP.config["GOOGLE_UPLOAD_BUCKET"])
     return response
 
 
@@ -389,8 +364,10 @@ def add_hooks():
     """
 
     # Accounts hooks
-    APP.on_accounts_inserted += hooks.log_user_create
-    APP.on_accounts_updated += hooks.log_user_modified
+    APP.on_inserted_accounts += hooks.log_user_create
+    APP.on_updated_accounts += hooks.log_user_modified
+    APP.on_inserted_accounts_info += hooks.log_user_create
+    APP.on_updated_accounts_update += hooks.log_user_modified
 
     # Ingestion Hooks
     APP.on_updated_ingestion += hooks.process_data_upload
