@@ -111,6 +111,7 @@ DOMAIN = {
     'status': schemas.ANALYSIS_STATUS,
     'data/query': schemas.DATA_AGG_INPUTS,
     'data_edit': schemas.DATA_EDIT,
+    'data_vis': schemas.DATA_TOGGLE_VIS,
     'vcf': schemas.MAF_PT,
     'hla': schemas.HLA,
     'neoantigen': schemas.NEOANTIGEN,
