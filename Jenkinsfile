@@ -94,6 +94,7 @@ spec:
           sh 'sleep 10'
           sh 'helm upgrade ingestion-api cidc/ingestion-api --version=0.1.0-staging --set imageSHA=$(gcloud container images list-tags --format="get(digest)" --filter="tags:staging" gcr.io/cidc-dfci/ingestion-api) --set image.tag=staging --tls'
           sh "echo 'upgrade done'"
+          sh 'sleep 10'
           sh "kubectl wait pod -l app=ingestion-api --for=condition=Ready --timeout=180s"
           sh "echo 'condition met'"
         }
