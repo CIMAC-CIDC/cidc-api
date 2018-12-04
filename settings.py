@@ -17,6 +17,7 @@ ALGORITHMS = ["RS256"]
 AUTH0_PORTAL_AUDIENCE = env.get('AUTH0_PORTAL_AUDIENCE')
 GOOGLE_URL = env.get('GOOGLE_URL')
 GOOGLE_FOLDER_PATH = env.get('GOOGLE_FOLDER_PATH')
+GOOGLE_UPLOAD_BUCKET = env.get("GOOGLE_UPLOAD_BUCKET")
 RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
 
 # Default credentials for a local mongodb, do NOT use for production
@@ -110,6 +111,7 @@ DOMAIN = {
     'status': schemas.ANALYSIS_STATUS,
     'data/query': schemas.DATA_AGG_INPUTS,
     'data_edit': schemas.DATA_EDIT,
+    'data_vis': schemas.DATA_TOGGLE_VIS,
     'vcf': schemas.MAF_PT,
     'hla': schemas.HLA,
     'neoantigen': schemas.NEOANTIGEN,

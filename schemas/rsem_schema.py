@@ -5,7 +5,6 @@ Schema for rsem outputs
 from schemas.coercers import FLOAT_COERCER as float_coercer
 from schemas.tools import create_biomarker_schema
 
-
 RSEM_EXPRESSION = create_biomarker_schema({
     'gene_id': {
         'type': 'string',

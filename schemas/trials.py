@@ -2,6 +2,8 @@
 """
 Validator for Trial data.
 """
+from schemas.fielder import fielder
+
 
 TRIALS = {
     'public_methods': [],
@@ -53,3 +55,29 @@ TRIALS = {
         },
     },
 }
+
+CHILDDOCUMENTS = {}
+CHILDDOCUMENTS.update([
+    fielder('document_id', d_type='objectid', required=True),
+    fielder('collection', required=True)
+])
+
+INPUTSCHEMA = {}
+INPUTSCHEMA.update([
+    fielder('record', d_type='objectid', required=True),
+    fielder('file_name', required=True),
+    fielder('gs_uri', required=True),
+    fielder('children', d_type='list', subschema=CHILDDOCUMENTS)
+])
+
+RUNSCHEMA = {}
+RUNSCHEMA.update([
+    fielder('assay', d_type='objectid', required=True),
+    fielder('inputs', d_type='list', subschema=INPUTSCHEMA)
+])
+
+TRIALS['schema'].update(
+    [
+        fielder("runs", d_type="list", subschema=RUNSCHEMA)
+    ]
+)
