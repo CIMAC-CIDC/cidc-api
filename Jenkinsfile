@@ -47,7 +47,7 @@ spec:
         container('python') {
           checkout scm
           sh 'pip3 install -r requirements.txt'
-          sh 'pytest --html=command_line_tests.html'
+          sh 'pytest --html=api_tests.html'
           sh 'pytest --cov-report xml:coverage.xml --cov ./'
           sh 'curl -s https://codecov.io/bash | bash -s - -t ${CODECOV_TOKEN}'
         }
@@ -93,6 +93,41 @@ spec:
         container('docker') {
           sh 'docker tag ingestion-api gcr.io/cidc-dfci/ingestion-api:staging'
           sh 'docker push gcr.io/cidc-dfci/ingestion-api:staging'
+        }
+      }
+    }
+    stage('Upload report (dev)') {
+      when {
+        not {
+          anyOf {
+            branch "master";
+            branch "staging"
+          }
+        }
+      }
+      steps {
+        container('gcloud') {
+          sh 'gsutil cp api_tests.html gs://cidc-test-reports/ingestion-api/dev'
+        }
+      }
+    }
+    stage('Upload report (staging)') {
+      steps {
+        when {
+          branch 'staging'
+        }
+        container('gcloud') {
+          sh 'gsutil cp api_tests.html gs://cidc-test-reports/ingestion-api/staging'
+        }
+      }
+    }
+    stage('Upload report (master)') {
+      when {
+        branch 'master'
+      }
+      steps {
+        container('gcloud') {
+          sh 'gsutil cp api_tests.html gs://cidc-test-reports/cidc-cli/master'
         }
       }
     }
