@@ -112,10 +112,10 @@ spec:
       }
     }
     stage('Upload report (staging)') {
-      steps {
-        when {
+      when {
           branch 'staging'
-        }
+      }
+      steps {
         container('gcloud') {
           sh 'gsutil cp api_tests.html gs://cidc-test-reports/ingestion-api/staging'
         }
@@ -133,7 +133,7 @@ spec:
     }
     stage('Docker deploy (staging)') {
       when {
-          branch 'staging'
+        branch 'staging'
       }
       steps {
         container('gcloud') {
