@@ -9,14 +9,6 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - name: docker
-    image: docker:latest
-    command:
-    - cat
-    tty: true
-    volumeMounts:
-    - mountPath: /var/run/docker.sock
-      name: docker-volume
   - name: python
     image: python:3.6.5
     command:
@@ -27,6 +19,14 @@ spec:
     command:
     - cat
     tty: true
+  - name: docker
+    image: docker:latest
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - mountPath: /var/run/docker.sock
+      name: docker-volume
   volumes:
   - name: docker-volume
     hostPath: 
