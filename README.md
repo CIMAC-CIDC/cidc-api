@@ -1,3 +1,4 @@
+![codecov](https://codecov.io/gh/dfci/cidc-ingestion-api/branch/master/graph/badge.svg)
 ## Ingestion API
 
 Python-EVE powered API for CIDC bioinformatics pipeline. This API is designed to be used with a CLI tool dsitributed to bioinformaticians. 

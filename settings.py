@@ -79,10 +79,10 @@ if AUTH0_AUDIENCE == '':
     AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
 
 # If this line is missing API will default to GET only
-RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
+RESOURCE_METHODS = []
 
 # Enable reads (GET), edits (PATCH), replacements (PUT), and delete
-ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
+ITEM_METHODS = []
 
 TEST = {
     'schema': {

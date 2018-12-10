@@ -19,6 +19,9 @@ python-json-logger = "*"
 google-cloud-logging = "*"
 gunicorn = "*"
 redis = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-html = "*"
 
 [dev-packages]
 pylint = "*"
