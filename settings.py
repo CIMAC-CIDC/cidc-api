@@ -128,5 +128,6 @@ DOMAIN = {
     'accounts_info': schemas.DB_ACCOUNTS_INFO,
     'accounts_update': schemas.DB_ACCOUNTS_UPDATE,
     'olink': schemas.OLINK,
-    'olink_meta': schemas.BIOREPOSITORY
+    'olink_meta': schemas.BIOREPOSITORY,
+    'gene_symbols': schemas.IDENTIFIER_SCHEMA
 }
