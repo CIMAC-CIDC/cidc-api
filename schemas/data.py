@@ -6,6 +6,7 @@ DATA = {
     'public_methods': [],
     'resource_methods': ['GET'],
     'allowed_roles': ['admin', 'user', 'uploader'],
+    'allowed_item_roles': ['admin', 'user', 'uploader'],
     'datasource': {
         'source': 'data',
         'filter': {

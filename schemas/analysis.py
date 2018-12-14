@@ -6,6 +6,7 @@ ANALYSIS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'allowed_roles': ['admin', 'superuser', 'user'],
+    'allowed_item_roles': ['admin', 'superuser', 'user'],
     'schema': {
         'start_date': {
             'type': 'string'

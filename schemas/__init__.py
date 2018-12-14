@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Module that stores the record validators for eve.
 """
@@ -19,3 +18,4 @@ from schemas.rsem_schema import RSEM_EXPRESSION, RSEM_ISOFORMS
 from schemas.user_schema import DB_USER, DB_ACCOUNTS_INFO, DB_ACCOUNTS_UPDATE
 from schemas.olink_schema import OLINK
 from schemas.metadata_schema import BIOREPOSITORY
+from schemas.hugo_schema import IDENTIFIER_SCHEMA

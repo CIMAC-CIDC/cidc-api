@@ -10,6 +10,8 @@ TRIALS = {
     'resource_methods': ['GET', 'POST'],
     'allowed_read_roles': ['user', 'uploader'],
     'allowed_roles': ['admin', 'superuser'],
+    'allowed_item_read_roles': ['user', 'uploader'],
+    'allowed_item_roles': ['admin', 'superuser'],
     'allowed_filters': ['collaborators', 'principal_investigator', '_id', 'assays.assay_id'],
     'schema': {
         'trial_name': {

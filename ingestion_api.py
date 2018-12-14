@@ -364,33 +364,33 @@ def add_hooks():
     """
 
     # Accounts hooks
-    APP.on_inserted_accounts += hooks.log_user_create
-    APP.on_updated_accounts += hooks.log_user_modified
-    APP.on_inserted_accounts_info += hooks.log_user_create
-    APP.on_updated_accounts_update += hooks.log_user_modified
+    APP.on_inserted_accounts += hooks.log_user_create # pylint: disable=E1101
+    APP.on_update_accounts += hooks.log_user_modify # pylint: disable=E1101
+    APP.on_inserted_accounts_info += hooks.log_user_create # pylint: disable=E1101
+    APP.on_update_accounts_update += hooks.log_accounts_update # pylint: disable=E1101
 
     # Ingestion Hooks
-    APP.on_updated_ingestion += hooks.process_data_upload
-    APP.on_insert_ingestion += hooks.register_upload_job
+    APP.on_updated_ingestion += hooks.process_data_upload # pylint: disable=E1101
+    APP.on_insert_ingestion += hooks.register_upload_job # pylint: disable=E1101
 
     # Data Hooks
-    APP.on_insert_data += hooks.serialize_objectids
-    APP.on_inserted_data += hooks.check_for_analysis
-    APP.on_updated_data += hooks.data_patched
-    APP.on_inserted_data_edit += hooks.check_for_analysis
-    APP.on_insert_data_edit += hooks.serialize_objectids
-    APP.on_update_data_vis += hooks.user_visibility_toggle
+    APP.on_insert_data += hooks.serialize_objectids # pylint: disable=E1101
+    APP.on_inserted_data += hooks.check_for_analysis # pylint: disable=E1101
+    APP.on_updated_data += hooks.data_patched # pylint: disable=E1101
+    APP.on_inserted_data_edit += hooks.check_for_analysis # pylint: disable=E1101
+    APP.on_insert_data_edit += hooks.serialize_objectids # pylint: disable=E1101
+    APP.on_update_data_vis += hooks.user_visibility_toggle # pylint: disable=E1101
 
     # Analysis Hooks
-    APP.on_insert_analysis += hooks.register_analysis
+    APP.on_insert_analysis += hooks.register_analysis # pylint: disable=E1101
 
     # Pre get filter hook.
-    APP.on_pre_GET += hooks.filter_on_id
+    APP.on_pre_GET += hooks.filter_on_id # pylint: disable=E1101
 
     # Logging request related hooks
-    APP.on_post_PATCH += hooks.log_patch_request
-    APP.on_post_POST += hooks.log_post_request
-    APP.on_post_DELETE += hooks.log_delete_request
+    APP.on_post_PATCH += hooks.log_patch_request # pylint: disable=E1101
+    APP.on_post_POST += hooks.log_post_request # pylint: disable=E1101
+    APP.on_post_DELETE += hooks.log_delete_request # pylint: disable=E1101
 
 
 if __name__ == "__main__":
