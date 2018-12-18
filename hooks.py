@@ -190,7 +190,7 @@ def log_user_create(items: List[dict]) -> None:
 
 
 # On update accounts_update
-def log_accounts_update(updates: dict, original: dict) -> None:
+def log_accounts_updated(updates: dict, original: dict) -> None:
     """
     Logging function for the "accounts_info" endpoint.
     Arguments:
@@ -218,8 +218,8 @@ def log_accounts_update(updates: dict, original: dict) -> None:
         log += "Changed: %s\n" % json.dumps(update)
 
 
-# On update user.
-def log_user_modify(updates: dict, original: dict) -> None:
+# On updated user.
+def log_user_modified(updates: dict, original: dict) -> None:
     """
     Function to log whenever a user's details are altered.
 
