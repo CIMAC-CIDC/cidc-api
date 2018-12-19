@@ -731,5 +731,7 @@ MAF = {
 MAF_PT = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
+    "allowed_roles": ["admin", "user", "superuser", "uploader"],
+    "allowed_item_roles": ["admin", "user", "superuser", "uploader"],
     'schema': MAF
 }

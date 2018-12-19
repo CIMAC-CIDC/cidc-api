@@ -64,6 +64,7 @@ ANALYSIS_STATUS = {
     'resource_methods': ['GET'],
     'allowed_roles': ['admin', 'superuser', 'user'],
     'allowed_filters': ['started_by'],
+    'allowed_item_roles': ['admin', 'superuser', 'user'],
     'datasource': {
         'source': 'analysis',
         'projection': {
