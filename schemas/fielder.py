@@ -46,12 +46,13 @@ def fielder(
 
 
 def fielder_array(fields: List[Tuple[str, dict]]) -> dict:
-    """[summary]
+    """
+    Applies the fielder function to an array of fields.
 
     Arguments:
-        fields {List[Tuple[str, dict]]} -- [description]
-
+        fields {List[Tuple[str, dict]]} -- List of field specifications, with item 0 being the field
+            name, and item 1 being the named options.
     Returns:
-        dict -- [description]
+        dict -- Cerberus schema, put this in the "schema" key of a new schema that you create.
     """
     return {}.update([fielder(x[0], **x[1]) for x in fields])

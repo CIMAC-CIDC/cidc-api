@@ -4,7 +4,8 @@
 CLINICAL_1021 = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
-    'allowed_roles': ['user', 'admin'],
+    'allowed_roles': ['user', 'admin', 'uploader', 'superuser'],
+    'allowed_item_roles': ['user', 'admin', 'uploader', 'superuser'],
     'schema': {
         'trial': {
             'type': 'string',

@@ -39,10 +39,14 @@ RATE_LIMIT_POST_WINDOW = env.get('RATE_LIMIT_POST_WINDOW')
 RATE_LIMIT_PATCH_WINDOW = env.get('RATE_LIMIT_PATCH_WINDOW')
 RATE_LIMIT_DELETE_WINDOW = env.get('RATE_LIMIT_DELETE_WINDOW')
 
-RATE_LIMIT_GET = (int(RATE_LIMIT_GET_REQUESTS), int(RATE_LIMIT_GET_WINDOW))
-RATE_LIMIT_POST = (int(RATE_LIMIT_POST_REQUESTS), int(RATE_LIMIT_POST_WINDOW))
-RATE_LIMIT_PATCH = (int(RATE_LIMIT_PATCH_REQUESTS), int(RATE_LIMIT_PATCH_WINDOW))
-RATE_LIMIT_DELETE = (int(RATE_LIMIT_DELETE_REQUESTS), int(RATE_LIMIT_DELETE_WINDOW))
+if RATE_LIMIT_GET_REQUESTS and RATE_LIMIT_GET_WINDOW:
+    RATE_LIMIT_GET = (int(RATE_LIMIT_GET_REQUESTS), int(RATE_LIMIT_GET_WINDOW))
+if RATE_LIMIT_POST_REQUESTS and RATE_LIMIT_POST_WINDOW:
+    RATE_LIMIT_POST = (int(RATE_LIMIT_POST_REQUESTS), int(RATE_LIMIT_POST_WINDOW))
+if RATE_LIMIT_PATCH_REQUESTS and RATE_LIMIT_PATCH_WINDOW:
+    RATE_LIMIT_PATCH = (int(RATE_LIMIT_PATCH_REQUESTS), int(RATE_LIMIT_PATCH_WINDOW))
+if RATE_LIMIT_DELETE_REQUESTS and RATE_LIMIT_DELETE_WINDOW:
+    RATE_LIMIT_DELETE = (int(RATE_LIMIT_DELETE_REQUESTS), int(RATE_LIMIT_DELETE_WINDOW))
 
 if not env.get('IN_CLOUD'):
     logging.info({
@@ -84,16 +88,6 @@ RESOURCE_METHODS = []
 # Enable reads (GET), edits (PATCH), replacements (PUT), and delete
 ITEM_METHODS = []
 
-TEST = {
-    'schema': {
-        'message': {
-            'type': 'string',
-            'required': False
-        }
-    },
-    'authentication': None
-}
-
 X_DOMAINS = [
     'http://editor.swagger.io',
     'http://petstore.swagger.io'
@@ -105,7 +99,6 @@ DOMAIN = {
     'ingestion': schemas.INGESTION,
     'data': schemas.DATA,
     'trials': schemas.TRIALS,
-    'test': TEST,
     'assays': schemas.ASSAYS,
     'analysis': schemas.ANALYSIS,
     'status': schemas.ANALYSIS_STATUS,

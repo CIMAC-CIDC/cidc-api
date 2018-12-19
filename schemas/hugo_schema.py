@@ -31,7 +31,7 @@ IDENTIFIER_SCHEMA = {
     "resource_methods": ["GET", "POST", "DELETE"],
     "item_methods": ["GET"],
     "allowed_roles": ["admin"],
-    "allowed_item_riles": ["admin"],
+    "allowed_item_roles": ["admin"],
     "id_field": "symbol",
     "mongo_indexes": {"symbol": ([("symbol", 1)], {"unique": True})},
     "schema": {},

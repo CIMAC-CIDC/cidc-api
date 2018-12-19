@@ -93,6 +93,7 @@ DB_ACCOUNTS_INFO = {
     'public_methods': [],
     'resource_methods': ['GET'],
     'allowed_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
+    'allowed_item_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
     'item_methods': [],
     'datasource': {
         'source': 'accounts'
