@@ -174,6 +174,7 @@ def ensure_user_account_exists(email_address: str) -> None:
                 ).isoformat(),
                 "role": "registrant",
                 "registered": False,
+                "permissions": []
             }
         )
 
