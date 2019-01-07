@@ -39,7 +39,7 @@ DB_USER = {
             'type': 'date',
         },
         'registration_submit_date': {
-            'type': 'date',
+            'type': 'string',
         },
         'first_n': {
             'type': 'string',
@@ -115,7 +115,7 @@ DB_ACCOUNTS_INFO = {
             'type': 'date'
         },
         'registration_submit_date': {
-            'type': 'date',
+            'type': 'string',
         },
         'first_n': {
             'type': 'string'
@@ -167,7 +167,7 @@ DB_ACCOUNTS_UPDATE = {
             'required': True
         },
         'registration_submit_date': {
-            'type': 'datetime',
+            'type': 'string',
             'required': False
         },
         'position_description': {
