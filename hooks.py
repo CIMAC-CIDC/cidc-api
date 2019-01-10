@@ -22,13 +22,15 @@ def get_current_user():
         str -- User GID
     """
     # Try to get the user twice in case of any weird sync issues.
-    for i in range(2):
+    for i in range(4):
         try:
             current_user = _request_ctx_stack.top.current_user
             return current_user
         except AttributeError:
             pass
-    raise AttributeError("Unable to find a user")
+    if not current_user:
+        logging.info({"message": "Current user is undefined", "category": "ERROR-EVE-DEBUG"})
+        raise AttributeError("Unable to find a user")
 
 
 def find_duplicates(items: List[dict]) -> List[str]:
@@ -306,6 +308,20 @@ def register_analysis(items: List[dict]) -> None:
             analysis["started_by"],
         )
         logging.info({"message": log, "category": "INFO-EVE-DATA"})
+
+
+# On delete gene_symbol.
+def drop_gene_symbol(item):
+    """
+    When the endpoint gets a delete, removes all documents in the col.
+
+    Arguments:
+        item {[type]} -- [description]
+    """
+    symbols = app.data.driver.db["gene_symbol"]
+    symbols.remove({})
+    log = "Gene collection dropped by celery"
+    logging.info({"message": log, "category": "INFO-EVE-HUGO"})
 
 
 def start_celery_task(task: str, arguments: List[object], task_id: int) -> None:
