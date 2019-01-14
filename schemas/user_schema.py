@@ -5,6 +5,7 @@ Schema for users of the database.
 
 DB_USER = {
     'public_methods': [],
+    'public_item_methods': [],
     'resource_methods': ['GET', 'POST', 'DELETE'],
     'item_methods': ['GET', 'PATCH', 'DELETE'],
     'allowed_roles': ['admin'],
@@ -38,7 +39,7 @@ DB_USER = {
             'type': 'date',
         },
         'registration_submit_date': {
-            'type': 'date',
+            'type': 'string',
         },
         'first_n': {
             'type': 'string',
@@ -92,6 +93,7 @@ DB_ACCOUNTS_INFO = {
     'public_methods': [],
     'resource_methods': ['GET'],
     'allowed_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
+    'allowed_item_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
     'item_methods': [],
     'datasource': {
         'source': 'accounts'
@@ -113,7 +115,7 @@ DB_ACCOUNTS_INFO = {
             'type': 'date'
         },
         'registration_submit_date': {
-            'type': 'date',
+            'type': 'string',
         },
         'first_n': {
             'type': 'string'
@@ -165,7 +167,7 @@ DB_ACCOUNTS_UPDATE = {
             'required': True
         },
         'registration_submit_date': {
-            'type': 'datetime',
+            'type': 'string',
             'required': False
         },
         'position_description': {

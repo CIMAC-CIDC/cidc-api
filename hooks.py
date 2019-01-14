@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Hooks responsible for determining the endpoint behavior of the application.
 """
@@ -6,10 +5,13 @@ import datetime
 import json
 import logging
 from typing import List
-from bson import json_util, ObjectId
-from flask import current_app as app, abort, _request_ctx_stack
+
+from bson import ObjectId, json_util
+from flask import _request_ctx_stack, abort
+from flask import current_app as app
 from kombu import Connection, Exchange, Producer
-from settings import RABBIT_MQ_ADDRESS, GOOGLE_UPLOAD_BUCKET
+
+from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS
 
 
 def get_current_user():
@@ -187,6 +189,35 @@ def log_user_create(items: List[dict]) -> None:
         logging.info({"message": log, "category": "FAIR-EVE-NEWUSER"})
 
 
+# On update accounts_update
+def log_accounts_updated(updates: dict, original: dict) -> None:
+    """
+    Logging function for the "accounts_info" endpoint.
+    Arguments:
+        updates {dict} -- updates to object
+        original {dict} -- original record.
+
+    Returns:
+        None -- [description]
+    """
+    current_user = None
+    try:
+        current_user = get_current_user()
+    except AttributeError as attr_err:
+        log = (
+            "Unable to determine source of user modification. Aborting. :%s" % attr_err
+        )
+        logging.error({"message": log, "category": "ERROR-EVE-FAIR"})
+        abort(500, "NO_ADMIN_FOUND")
+
+    log = "Update to user %s made by %s: \n" % (
+        original["email"],
+        current_user["email"],
+    )
+    for update in updates:
+        log += "Changed: %s\n" % json.dumps(update)
+
+
 # On updated user.
 def log_user_modified(updates: dict, original: dict) -> None:
     """
@@ -199,9 +230,13 @@ def log_user_modified(updates: dict, original: dict) -> None:
     current_user = None
     try:
         current_user = get_current_user()
-    except AttributeError:
-        current_user = ""
-    current_user = get_current_user()
+    except AttributeError as attr_err:
+        log = (
+            "Unable to determine source of user modification. Aborting. :%s" % attr_err
+        )
+        logging.error({"message": log, "category": "ERROR-EVE-FAIR"})
+        abort(500, "NO_ADMIN_FOUND")
+
     log = "Update to user %s made by %s: \n" % (
         original["email"],
         current_user["email"],
@@ -381,7 +416,7 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
                 str(payload.status_code),
             )
         )
-        logging.info({"mmessage": log, "category": "INFO-EVE-PATCH-REQUEST"})
+        logging.info({"message": log, "category": "INFO-EVE-PATCH-REQUEST"})
     except TypeError:
         log = {
             "Patch request failed for resource %s, by user %s."

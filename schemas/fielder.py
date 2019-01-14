@@ -1,7 +1,7 @@
 """
 A module defining 'fielder' which is a shortcut method for generating cerberus schemas.
 """
-from typing import Tuple
+from typing import Tuple, List
 
 
 def fielder(
@@ -43,3 +43,16 @@ def fielder(
 
     (key, value), = field_definition.items()
     return key, value
+
+
+def fielder_array(fields: List[Tuple[str, dict]]) -> dict:
+    """
+    Applies the fielder function to an array of fields.
+
+    Arguments:
+        fields {List[Tuple[str, dict]]} -- List of field specifications, with item 0 being the field
+            name, and item 1 being the named options.
+    Returns:
+        dict -- Cerberus schema, put this in the "schema" key of a new schema that you create.
+    """
+    return {}.update([fielder(x[0], **x[1]) for x in fields])

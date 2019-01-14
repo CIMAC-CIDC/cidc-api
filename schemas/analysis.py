@@ -6,6 +6,7 @@ ANALYSIS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'allowed_roles': ['admin', 'superuser', 'user'],
+    'allowed_item_roles': ['admin', 'superuser', 'user'],
     'schema': {
         'start_date': {
             'type': 'string'
@@ -63,6 +64,7 @@ ANALYSIS_STATUS = {
     'resource_methods': ['GET'],
     'allowed_roles': ['admin', 'superuser', 'user'],
     'allowed_filters': ['started_by'],
+    'allowed_item_roles': ['admin', 'superuser', 'user'],
     'datasource': {
         'source': 'analysis',
         'projection': {

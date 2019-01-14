@@ -6,6 +6,7 @@ DATA = {
     'public_methods': [],
     'resource_methods': ['GET'],
     'allowed_roles': ['admin', 'user', 'uploader'],
+    'allowed_item_roles': ['admin', 'user', 'uploader'],
     'datasource': {
         'source': 'data',
         'filter': {
@@ -71,6 +72,7 @@ DATA = {
 DATA_EDIT = {
     "public_methods": [],
     "allowed_roles": ["admin"],
+    "allowed_item_roles": ["admin"],
     "resource_methods": ["POST"],
     "item_methods": ["PATCH"],
     "datasource": {
@@ -82,6 +84,7 @@ DATA_EDIT = {
 DATA_TOGGLE_VIS = {
     "public_methods": [],
     "allowed_roles": ["admin", "user", "uploader"],
+    "allowed_item_roles": ["admin", "user", "uploader"],
     "resource_methods": ["GET"],
     "item_methods": ["PATCH"],
     "datasource": {

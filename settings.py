@@ -39,10 +39,14 @@ RATE_LIMIT_POST_WINDOW = env.get('RATE_LIMIT_POST_WINDOW')
 RATE_LIMIT_PATCH_WINDOW = env.get('RATE_LIMIT_PATCH_WINDOW')
 RATE_LIMIT_DELETE_WINDOW = env.get('RATE_LIMIT_DELETE_WINDOW')
 
-RATE_LIMIT_GET = (int(RATE_LIMIT_GET_REQUESTS), int(RATE_LIMIT_GET_WINDOW))
-RATE_LIMIT_POST = (int(RATE_LIMIT_POST_REQUESTS), int(RATE_LIMIT_POST_WINDOW))
-RATE_LIMIT_PATCH = (int(RATE_LIMIT_PATCH_REQUESTS), int(RATE_LIMIT_PATCH_WINDOW))
-RATE_LIMIT_DELETE = (int(RATE_LIMIT_DELETE_REQUESTS), int(RATE_LIMIT_DELETE_WINDOW))
+if RATE_LIMIT_GET_REQUESTS and RATE_LIMIT_GET_WINDOW:
+    RATE_LIMIT_GET = (int(RATE_LIMIT_GET_REQUESTS), int(RATE_LIMIT_GET_WINDOW))
+if RATE_LIMIT_POST_REQUESTS and RATE_LIMIT_POST_WINDOW:
+    RATE_LIMIT_POST = (int(RATE_LIMIT_POST_REQUESTS), int(RATE_LIMIT_POST_WINDOW))
+if RATE_LIMIT_PATCH_REQUESTS and RATE_LIMIT_PATCH_WINDOW:
+    RATE_LIMIT_PATCH = (int(RATE_LIMIT_PATCH_REQUESTS), int(RATE_LIMIT_PATCH_WINDOW))
+if RATE_LIMIT_DELETE_REQUESTS and RATE_LIMIT_DELETE_WINDOW:
+    RATE_LIMIT_DELETE = (int(RATE_LIMIT_DELETE_REQUESTS), int(RATE_LIMIT_DELETE_WINDOW))
 
 if not env.get('IN_CLOUD'):
     logging.info({
@@ -79,20 +83,10 @@ if AUTH0_AUDIENCE == '':
     AUTH0_AUDIENCE = 'https://' + AUTH0_DOMAIN + '/userinfo'
 
 # If this line is missing API will default to GET only
-RESOURCE_METHODS = ['GET', 'POST', 'DELETE']
+RESOURCE_METHODS = []
 
 # Enable reads (GET), edits (PATCH), replacements (PUT), and delete
-ITEM_METHODS = ['GET', 'PATCH', 'PUT', 'DELETE']
-
-TEST = {
-    'schema': {
-        'message': {
-            'type': 'string',
-            'required': False
-        }
-    },
-    'authentication': None
-}
+ITEM_METHODS = []
 
 X_DOMAINS = [
     'http://editor.swagger.io',
@@ -105,7 +99,6 @@ DOMAIN = {
     'ingestion': schemas.INGESTION,
     'data': schemas.DATA,
     'trials': schemas.TRIALS,
-    'test': TEST,
     'assays': schemas.ASSAYS,
     'analysis': schemas.ANALYSIS,
     'status': schemas.ANALYSIS_STATUS,
@@ -128,5 +121,6 @@ DOMAIN = {
     'accounts_info': schemas.DB_ACCOUNTS_INFO,
     'accounts_update': schemas.DB_ACCOUNTS_UPDATE,
     'olink': schemas.OLINK,
-    'olink_meta': schemas.BIOREPOSITORY
+    'olink_meta': schemas.BIOREPOSITORY,
+    'gene_symbols': schemas.IDENTIFIER_SCHEMA
 }
