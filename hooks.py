@@ -552,6 +552,8 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         lookup["collaborators"] = user_id
     elif resource in ["accounts_info", "accounts_update"]:
         lookup["username"] = user_id
+    elif resource == "assays":
+        pass
     else:
         accounts = app.data.driver.db["accounts"]
         perms = accounts.find_one({"email": user_id}, {"permissions": 1})["permissions"]
