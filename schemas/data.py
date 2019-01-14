@@ -19,8 +19,16 @@ DATA = {
             'type': 'string',
             'required': True,
         },
-        'sample_id': {
-            'type': 'string'
+        'file_size': {
+            'type': 'integer',
+            'required': True
+        },
+        'sample_ids': {
+            'type': 'list',
+            'schema': {
+                'type': 'string',
+                'required': True
+            }
         },
         'trial': {
             'type': 'objectid',
