@@ -15,6 +15,10 @@ DATA = {
         },
     },
     'schema': {
+        'data_format': {
+            "trype": "string",
+            "required": True,
+        },
         'file_name': {
             'type': 'string',
             'required': True,
@@ -30,8 +34,16 @@ DATA = {
                 'required': True
             }
         },
+        'number_of_samples': {
+            'type': 'integer',
+            'required': True
+        },
         'trial': {
             'type': 'objectid',
+            'required': True,
+        },
+        'trial_name': {
+            'type': 'string',
             'required': True,
         },
         'gs_uri': {
@@ -40,6 +52,10 @@ DATA = {
         },
         'assay': {
             'type': 'objectid',
+            'required': True,
+        },
+        'experimental_strategy': {
+            'type': 'string',
             'required': True,
         },
         'date_created': {

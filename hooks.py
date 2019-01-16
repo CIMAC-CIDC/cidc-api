@@ -29,7 +29,9 @@ def get_current_user():
         except AttributeError:
             pass
     if not current_user:
-        logging.info({"message": "Current user is undefined", "category": "ERROR-EVE-DEBUG"})
+        logging.info(
+            {"message": "Current user is undefined", "category": "ERROR-EVE-DEBUG"}
+        )
         raise AttributeError("Unable to find a user")
 
 
@@ -559,8 +561,9 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         perms = accounts.find_one({"email": user_id}, {"permissions": 1})["permissions"]
         if not doc_id:
             get_resource(lookup, perms)
-        elif not get_document(doc_id, resource, perms):
-            lookup["find"] = "nothing"
+        if doc_id:
+            if not get_document(doc_id, resource, perms):
+                lookup["find"] = "nothing"
 
 
 # Get id document
@@ -615,11 +618,7 @@ def get_resource(lookup: dict, permissions: List[dict]) -> None:
         # If they have a broad role.
         if permission["role"] == "trial_r":
             # note the ID.
-            trial_read.append(permission["trial"])
-            # check if the filter is redundant
-            if "trial" in lookup and lookup["trial"] != permission["trial"]:
-                # If not, apply
-                conditions.append({"trial": permission["trial"]})
+            conditions.append({"trial": permission["trial"]})
         if permission["role"] == "assay_r":
             assay_read.append(permission["assay"])
             if "assay" in lookup and lookup["assay"] != permission["assay"]:
