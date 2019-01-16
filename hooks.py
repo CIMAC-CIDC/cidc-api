@@ -22,13 +22,17 @@ def get_current_user():
         str -- User GID
     """
     # Try to get the user twice in case of any weird sync issues.
-    for i in range(2):
+    for i in range(4):
         try:
             current_user = _request_ctx_stack.top.current_user
             return current_user
         except AttributeError:
             pass
-    raise AttributeError("Unable to find a user")
+    if not current_user:
+        logging.info(
+            {"message": "Current user is undefined", "category": "ERROR-EVE-DEBUG"}
+        )
+        raise AttributeError("Unable to find a user")
 
 
 def find_duplicates(items: List[dict]) -> List[str]:
@@ -308,6 +312,20 @@ def register_analysis(items: List[dict]) -> None:
         logging.info({"message": log, "category": "INFO-EVE-DATA"})
 
 
+# On delete gene_symbol.
+def drop_gene_symbol(item):
+    """
+    When the endpoint gets a delete, removes all documents in the col.
+
+    Arguments:
+        item {[type]} -- [description]
+    """
+    symbols = app.data.driver.db["gene_symbol"]
+    symbols.remove({})
+    log = "Gene collection dropped by celery"
+    logging.info({"message": log, "category": "INFO-EVE-HUGO"})
+
+
 def start_celery_task(task: str, arguments: List[object], task_id: int) -> None:
     """
     Generic function to start a task through celery
@@ -543,8 +561,9 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         perms = accounts.find_one({"email": user_id}, {"permissions": 1})["permissions"]
         if not doc_id:
             get_resource(lookup, perms)
-        elif not get_document(doc_id, resource, perms):
-            lookup["find"] = "nothing"
+        if doc_id:
+            if not get_document(doc_id, resource, perms):
+                lookup["find"] = "nothing"
 
 
 # Get id document
@@ -599,11 +618,7 @@ def get_resource(lookup: dict, permissions: List[dict]) -> None:
         # If they have a broad role.
         if permission["role"] == "trial_r":
             # note the ID.
-            trial_read.append(permission["trial"])
-            # check if the filter is redundant
-            if "trial" in lookup and lookup["trial"] != permission["trial"]:
-                # If not, apply
-                conditions.append({"trial": permission["trial"]})
+            conditions.append({"trial": permission["trial"]})
         if permission["role"] == "assay_r":
             assay_read.append(permission["assay"])
             if "assay" in lookup and lookup["assay"] != permission["assay"]:

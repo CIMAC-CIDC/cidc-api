@@ -29,7 +29,7 @@ IDENTIFIER_SCHEMA = {
     "public_methods": [],
     "public_item_methods": [],
     "resource_methods": ["GET", "POST", "DELETE"],
-    "item_methods": ["GET"],
+    "item_methods": ["GET", "DELETE"],
     "allowed_roles": ["admin"],
     "allowed_item_roles": ["admin"],
     "id_field": "symbol",

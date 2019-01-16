@@ -22,6 +22,7 @@ redis = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-html = "*"
+eve-swagger = "*"
 
 [dev-packages]
 pylint = "*"
