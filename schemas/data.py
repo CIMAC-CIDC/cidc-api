@@ -16,7 +16,7 @@ DATA = {
     },
     'schema': {
         'data_format': {
-            "trype": "string",
+            "type": "string",
             "required": True,
         },
         'file_name': {
