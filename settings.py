@@ -88,19 +88,20 @@ RESOURCE_METHODS = []
 # Enable reads (GET), edits (PATCH), replacements (PUT), and delete
 ITEM_METHODS = []
 
-X_DOMAINS = [
-    'http://editor.swagger.io',
-    'http://petstore.swagger.io'
-]
+X_DOMAINS = '*'
 
-X_HEADERS = ['Content-Type', 'If-Match']
+X_HEADERS = ['Content-Type', 'If-Match', 'Authorization']
+X_ALLOW_CREDENTIALS = True
+BANDWIDTH_SAVER = False
+CACHE_CONTROL = 'no-cache'
+CACHE_EXPIRES = 0
 
 DOMAIN = {
     'ingestion': schemas.INGESTION,
     'data': schemas.DATA,
     'trials': schemas.TRIALS,
-    'assays': schemas.ASSAYS,
     'analysis': schemas.ANALYSIS,
+    'assays': schemas.ASSAYS,
     'status': schemas.ANALYSIS_STATUS,
     'data/query': schemas.DATA_AGG_INPUTS,
     'data_edit': schemas.DATA_EDIT,
