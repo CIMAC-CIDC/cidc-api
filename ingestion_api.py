@@ -13,6 +13,7 @@ import requests
 from cidc_utils.loghandler import StackdriverJsonFormatter
 from eve import Eve
 from eve.auth import TokenAuth
+from eve_swagger import swagger
 from flask import _request_ctx_stack
 from flask import current_app as APP
 from flask import jsonify
@@ -62,7 +63,22 @@ APP = Eve(
     "ingestion_api", auth=BearerAuth, settings="settings.py", redis=REDIS_INSTANCE
 )
 APP.debug = False
-
+APP.register_blueprint(swagger)
+APP.config["SWAGGER_INFO"] = {
+    "title": "CIDC Ingestion API",
+    "version": "1.0",
+    "description": "The CIDC ingestion API",
+    "termsOfService": "To be added",
+    "contact": {
+        "name": "support",
+        "url": "https://github.com/dfci/cidc-ingestion-api/README"
+    },
+    "license": {
+        "name": "MIT",
+        "url": "https://github.com/dfci/cidc-ingestion-api/blob/master/LICENSE"
+    },
+    "schemes": ["http", "https"]
+}
 
 # Format error response and append status code.
 class AuthError(Exception):
@@ -270,8 +286,6 @@ def token_auth(token: dict) -> str:
             401,
         )
 
-    # Get user email from userinfo endpoint.
-    _request_ctx_stack.top.current_user = payload
     if request_from_portal:
         ensure_user_account_exists(payload["email"])
     elif "gty" not in payload:
@@ -294,6 +308,8 @@ def token_auth(token: dict) -> str:
     else:
         payload["email"] = "celery-taskmanager"
 
+    # Get user email from userinfo endpoint.
+    _request_ctx_stack.top.current_user = payload
     log = "Authenticated user: " + payload["email"]
     logging.info({"message": log, "category": "FAIR-EVE-LOGIN"})
     return payload["email"]
@@ -369,6 +385,9 @@ def add_hooks():
     APP.on_updated_accounts += hooks.log_user_modified # pylint: disable=E1101
     APP.on_inserted_accounts_info += hooks.log_user_create # pylint: disable=E1101
     APP.on_update_accounts_updated += hooks.log_accounts_updated # pylint: disable=E1101
+
+    # Gene symbol hooks
+    APP.on_deleted_gene_symbols += hooks.drop_gene_symbol # pylint: disable=E1101
 
     # Ingestion Hooks
     APP.on_updated_ingestion += hooks.process_data_upload # pylint: disable=E1101

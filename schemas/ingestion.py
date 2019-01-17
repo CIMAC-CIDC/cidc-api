@@ -46,6 +46,22 @@ INGESTION = {
                         'type': 'objectid',
                         'required': True
                     },
+                    "experimental_strategy": {
+                        "type": "string",
+                        "required": False
+                    },
+                    "data_format": {
+                        "type": "string",
+                        "required": False
+                    },
+                    "file_size": {
+                        "type": "integer",
+                        "required": False
+                    },
+                    "number_of_samples": {
+                        "type": "integer",
+                        "required": False
+                    },
                     'trial': {
                         'type': 'objectid',
                         'required': True
@@ -54,8 +70,15 @@ INGESTION = {
                         'type': 'string',
                         'required': True
                     },
-                    'sample_id': {
-                        'type': 'string',
+                    "trial_name": {
+                        "type": "string",
+                        "required": False
+                    },
+                    'sample_ids': {
+                        'type': 'list',
+                        'schema': {
+                            'type': 'string'
+                        },
                         'required': False
                     },
                     'mapping': {

@@ -4,3 +4,6 @@ __pycache__/
 jenkinsfile_helm_test
 Jenkinsfile_working
 .google_auth.json
+.coverage
+coverage.xml
+assets/*

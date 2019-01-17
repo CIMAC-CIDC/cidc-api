@@ -8,12 +8,12 @@ from dotenv import find_dotenv, load_dotenv
 
 import schemas
 
+ALGORITHMS = ["RS256"]
 AUTH0_AUDIENCE = env.get('AUTH0_AUDIENCE')
 AUTH0_CALLBACK_URL = env.get('AUTH0_CALLBACK_URL')
 AUTH0_CLIENT_ID = env.get('AUTH0_CLIENT_ID')
 AUTH0_CLIENT_SECRET = env.get('AUTH0_CLIENT_SECRET')
 AUTH0_DOMAIN = env.get('AUTH0_DOMAIN')
-ALGORITHMS = ["RS256"]
 AUTH0_PORTAL_AUDIENCE = env.get('AUTH0_PORTAL_AUDIENCE')
 GOOGLE_URL = env.get('GOOGLE_URL')
 GOOGLE_FOLDER_PATH = env.get('GOOGLE_FOLDER_PATH')
@@ -29,10 +29,10 @@ MONGO_DBNAME = 'CIDC'
 MONGO_OPTIONS = None
 
 # Rate limiting
+RATE_LIMIT_DELETE_REQUESTS = env.get('RATE_LIMIT_DELETE_REQUESTS')
 RATE_LIMIT_GET_REQUESTS = env.get('RATE_LIMIT_GET_REQUESTS')
 RATE_LIMIT_POST_REQUESTS = env.get('RATE_LIMIT_POST_REQUESTS')
 RATE_LIMIT_PATCH_REQUESTS = env.get('RATE_LIMIT_PATCH_REQUESTS')
-RATE_LIMIT_DELETE_REQUESTS = env.get('RATE_LIMIT_DELETE_REQUESTS')
 
 RATE_LIMIT_GET_WINDOW = env.get('RATE_LIMIT_GET_WINDOW')
 RATE_LIMIT_POST_WINDOW = env.get('RATE_LIMIT_POST_WINDOW')
@@ -88,19 +88,20 @@ RESOURCE_METHODS = []
 # Enable reads (GET), edits (PATCH), replacements (PUT), and delete
 ITEM_METHODS = []
 
-X_DOMAINS = [
-    'http://editor.swagger.io',
-    'http://petstore.swagger.io'
-]
+X_DOMAINS = '*'
 
-X_HEADERS = ['Content-Type', 'If-Match']
+X_HEADERS = ['Content-Type', 'If-Match', 'Authorization']
+X_ALLOW_CREDENTIALS = True
+BANDWIDTH_SAVER = False
+CACHE_CONTROL = 'no-cache'
+CACHE_EXPIRES = 0
 
 DOMAIN = {
     'ingestion': schemas.INGESTION,
     'data': schemas.DATA,
     'trials': schemas.TRIALS,
-    'assays': schemas.ASSAYS,
     'analysis': schemas.ANALYSIS,
+    'assays': schemas.ASSAYS,
     'status': schemas.ANALYSIS_STATUS,
     'data/query': schemas.DATA_AGG_INPUTS,
     'data_edit': schemas.DATA_EDIT,

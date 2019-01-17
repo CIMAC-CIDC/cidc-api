@@ -5,6 +5,7 @@ Data schema, each record represents a file in a google bucket.
 DATA = {
     'public_methods': [],
     'resource_methods': ['GET'],
+    'item_methods': ['GET'],
     'allowed_roles': ['admin', 'user', 'uploader'],
     'allowed_item_roles': ['admin', 'user', 'uploader'],
     'datasource': {
@@ -14,15 +15,35 @@ DATA = {
         },
     },
     'schema': {
+        'data_format': {
+            "type": "string",
+            "required": True,
+        },
         'file_name': {
             'type': 'string',
             'required': True,
         },
-        'sample_id': {
-            'type': 'string'
+        'file_size': {
+            'type': 'integer',
+            'required': True
+        },
+        'sample_ids': {
+            'type': 'list',
+            'schema': {
+                'type': 'string',
+                'required': True
+            }
+        },
+        'number_of_samples': {
+            'type': 'integer',
+            'required': True
         },
         'trial': {
             'type': 'objectid',
+            'required': True,
+        },
+        'trial_name': {
+            'type': 'string',
             'required': True,
         },
         'gs_uri': {
@@ -31,6 +52,10 @@ DATA = {
         },
         'assay': {
             'type': 'objectid',
+            'required': True,
+        },
+        'experimental_strategy': {
+            'type': 'string',
             'required': True,
         },
         'date_created': {
