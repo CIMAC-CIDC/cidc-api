@@ -513,7 +513,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     """
 
     # If it is a test call, don't bother filtering.
-    if resource in ["test", "accounts"]:
+    if resource in ["test"]:
         return
 
     doc_id = None
@@ -551,11 +551,11 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
     if resource == "ingestion":
         lookup["started_by"] = user_id
     elif resource == "trials":
-        lookup["collaborators"] = user_id
+        return
     elif resource in ["accounts_info", "accounts_update"]:
         lookup["username"] = user_id
     elif resource == "assays":
-        pass
+        return
     else:
         accounts = app.data.driver.db["accounts"]
         perms = accounts.find_one({"email": user_id}, {"permissions": 1})["permissions"]
