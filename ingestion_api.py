@@ -265,6 +265,18 @@ def token_auth(token: dict) -> str:
             algorithms=ALGORITHMS,
             audience=audience_to_verify,
             issuer="https://%s/" % AUTH0_DOMAIN,
+            options={
+                'verify_signature': True,
+                'verify_aud': True,
+                'verify_iat': True,
+                'verify_exp': True,
+                'verify_nbf': True,
+                'verify_iss': True,
+                'verify_sub': True,
+                'verify_jti': True,
+                'verify_at_hash': False,
+                'leeway': 0,
+            }
         )
     except jwt.ExpiredSignatureError:
         logging.error(

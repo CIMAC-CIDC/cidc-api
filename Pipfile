@@ -4,11 +4,11 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-requests = "*"
-python-jose = "*"
+requests = "==2.21.0"
+python-jose = "==3.0.1"
 kombu = "==4.1.0"
 bson = "*"
-Flask = "*"
+Flask = "==1.0.2"
 Flask-OAuthlib = "==0.9.4"
 "nose2" = "==0.7.4"
 Eve = "==0.8"
@@ -16,13 +16,14 @@ python-dotenv = "*"
 Cerberus = "==1.2"
 cidc_utils = {git = "https://github.com/CIMAC-CIDC/cidc-utils"}
 python-json-logger = "*"
-google-cloud-logging = "*"
-gunicorn = "*"
-redis = "*"
+google-cloud-logging = "==1.9.1"
+gunicorn = "==19.9.0"
+redis = "==3.0.1"
 pytest = "*"
 pytest-cov = "*"
 pytest-html = "*"
 eve-swagger = "*"
+requests-oauthlib = "==1.0.0"
 
 [dev-packages]
 pylint = "*"
