@@ -1,6 +1,7 @@
 """
 Validator for data about jobs.
 """
+from schemas.fastq_schema import FASTQ_SCHEMA
 
 # Schema that keeps track of jobs that users have started, as well as their ultimate status and
 # fate
@@ -84,7 +85,12 @@ INGESTION = {
                     'mapping': {
                         'type': 'string',
                         'required': False
-                    }
+                    },
+                    'fastq_properties': {
+                        'type': 'dict',
+                        'nullable': True,
+                        'schema': FASTQ_SCHEMA
+                    },
                 },
             },
         },

@@ -2,7 +2,7 @@
 Data schema, each record represents a file in a google bucket.
 """
 
-from schemas import FASTQ_SCHEMA
+from schemas.fastq_schema import FASTQ_SCHEMA
 
 DATA = {
     'public_methods': [],
@@ -97,6 +97,10 @@ DATA = {
             'type': 'dict',
             'nullable': True,
             'schema': FASTQ_SCHEMA
+        },
+        'download_link': {
+            'type': 'string',
+            'nullable': True
         }
     }
 }
