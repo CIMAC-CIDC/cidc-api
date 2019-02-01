@@ -1,17 +1,49 @@
 """
 Hooks responsible for determining the endpoint behavior of the application.
 """
+import base64
 import datetime
 import json
 import logging
+import time
+import urllib
 from typing import List
 
 from bson import ObjectId, json_util
 from flask import _request_ctx_stack, abort
 from flask import current_app as app
 from kombu import Connection, Exchange, Producer
+from oauth2client.service_account import ServiceAccountCredentials
 
 from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS
+
+CREDS = ServiceAccountCredentials.from_json_keyfile_name("../auth/.google_auth.json")
+CLIENT_ID = CREDS.service_account_email
+
+
+def sign_url(bucket_object, expires_after_seconds=6, bucket="lloyd-test-pipeline"):
+    method = "GET"
+    gcs_filename = urllib.parse.quote("/%s/%s" % (bucket, bucket_object))
+    content_md5, content_type = None, None
+    expiration_dt = datetime.datetime.utcnow() + datetime.timedelta(
+        seconds=expires_after_seconds
+    )
+    expiration = int(time.mktime(expiration_dt.timetuple()))
+    signature_string = "\n".join(
+        [method, content_md5 or "", content_type or "", str(expiration), gcs_filename]
+    )
+    signature_bytes = CREDS.sign_blob(signature_string)[1]
+    query_params = {
+        "GoogleAccessId": CLIENT_ID,
+        "Expires": str(expiration),
+        "Signature": base64.b64encode(signature_bytes),
+    }
+    result = "{endpoint}{resource}?{querystring}".format(
+        endpoint="https://storage.googleapis.com",
+        resource=gcs_filename,
+        querystring=urllib.parse.urlencode(query_params),
+    )
+    return result
 
 
 def get_current_user():
@@ -499,6 +531,20 @@ def log_delete_request(resource: str, request: str, payload: dict) -> None:
         )
     )
     logging.info({"message": log, "category": "INFO-EVE-DELETE-REQUEST"})
+
+
+def generate_signed_url(response: dict) -> None:
+    """[summary]
+
+    Arguments:
+        response {dict} -- [description]
+
+    Returns:
+        None -- [description]
+    """
+    url = response["gs_uri"]
+    signed_url = sign_url(url.replace("gs://lloyd-test-pipeline/", ""), expires_after_seconds=1000)
+    response["download_link"] = signed_url
 
 
 def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
