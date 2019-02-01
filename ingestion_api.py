@@ -17,7 +17,7 @@ from eve_swagger import swagger
 from flask import _request_ctx_stack
 from flask import current_app as APP
 from flask import jsonify
-from flask_oauthlib.client import OAuth
+from authlib.flask.client import OAuth
 from jose import jwt
 
 import hooks
@@ -111,7 +111,7 @@ def handle_auth_error(ex):
 
 
 OAUTH = OAuth(APP)
-AUTH0 = OAUTH.remote_app(
+AUTH0 = OAUTH.register(
     "auth0",
     consumer_key=AUTH0_CLIENT_ID,
     consumer_secret=AUTH0_CLIENT_SECRET,
@@ -412,6 +412,7 @@ def add_hooks():
     APP.on_inserted_data_edit += hooks.check_for_analysis # pylint: disable=E1101
     APP.on_insert_data_edit += hooks.serialize_objectids # pylint: disable=E1101
     APP.on_update_data_vis += hooks.user_visibility_toggle # pylint: disable=E1101
+    APP.on_fetched_item_data += hooks.generate_signed_url # pylint: disable=E1101
 
     # Analysis Hooks
     APP.on_insert_analysis += hooks.register_analysis # pylint: disable=E1101

@@ -96,42 +96,8 @@ spec:
         }
       }
     }
-    stage('Upload report (dev)') {
-      when {
-        not {
-          anyOf {
-            branch "master";
-            branch "staging"
-          }
-        }
-      }
-      steps {
-        container('gcloud') {
-          sh 'gsutil cp api_tests.html gs://cidc-test-reports/ingestion-api/dev'
-        }
-      }
-    }
-    stage('Upload report (staging)') {
-      when {
-          branch 'staging'
-      }
-      steps {
-        container('gcloud') {
-          sh 'gsutil cp api_tests.html gs://cidc-test-reports/ingestion-api/staging'
-        }
-      }
-    }
-    stage('Upload report (master)') {
-      when {
-        branch 'master'
-      }
-      steps {
-        container('gcloud') {
-          sh 'gsutil cp api_tests.html gs://cidc-test-reports/cidc-cli/master'
-        }
-      }
-    }
-    stage('Docker deploy (staging)') {
+
+    stage('Deploy (staging)') {
       when {
         branch 'staging'
       }
