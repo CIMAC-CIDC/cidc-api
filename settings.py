@@ -106,8 +106,6 @@ DOMAIN = {
     'data/query': schemas.DATA_AGG_INPUTS,
     'data_edit': schemas.DATA_EDIT,
     'data_vis': schemas.DATA_TOGGLE_VIS,
-    'vcf': schemas.MAF_PT,
-    'hla': schemas.HLA,
     'clinical_data': schemas.CLINICAL_1021,
     'accounts': schemas.DB_USER,
     'accounts_info': schemas.DB_ACCOUNTS_INFO,
