@@ -244,6 +244,7 @@ def token_auth(token: dict) -> str:
             }
 
     if not rsa_key:
+        logging.warning({"message": "no_rsa_key", "category": "WARNING-EVE-AUTH"})
         raise AuthError({"code": "no_rsa_key", "description": "rsa_key is null"}, 401)
 
     # Extract audience and see if it's either the
@@ -359,7 +360,7 @@ def custom500(error):
         [type] -- [description]
     """
     try:
-        errorlog = str(error)
+        errorlog: str = str(error)
         logging.error({"message": errorlog, "category": "ERROR-EVE-500"})
         return jsonify({"message": str(error)}), 500
     except AttributeError:
@@ -370,7 +371,7 @@ def custom500(error):
             },
             exc_info=True,
         )
-        err_str = str(error)
+        err_str: str = str(error)
         return jsonify({"message": err_str}), 500
 
 
