@@ -1,7 +1,7 @@
-| Branch | Coverage | Code Quality |
-| --- | --- | --- |
-| Master | [![codecov](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/master/graph/badge.svg)](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/master/) | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/6c9f0537475f46afa84f68923dd5f421)](https://www.codacy.com/app/CIMAC-CIDC/cidc-api?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=CIMAC-CIDC/cidc-api&amp;utm_campaign=Badge_Grade?branch=master)
-| Staging | [![codecov](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/staging/graph/badge.svg)](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/staging/) | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/6c9f0537475f46afa84f68923dd5f421)](https://www.codacy.com/app/CIMAC-CIDC/cidc-api?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=CIMAC-CIDC/cidc-api&amp;utm_campaign=Badge_Grade?branch=staging)
+| Branch | Coverage |
+| --- | --- |
+| Master | [![codecov](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/master/graph/badge.svg)](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/master/) |
+| Staging | [![codecov](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/staging/graph/badge.svg)](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/staging/) |
 
 ## CIDC-API
 This is the API that powers the CIDC project. It interacts with a MongoDB and controlls both user uploads of data, and user requests for data. This is designed primarily to be run as a helm chart on kubernetes, but can also be run as a docker image.
