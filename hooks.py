@@ -21,7 +21,24 @@ CREDS = ServiceAccountCredentials.from_json_keyfile_name("../auth/.google_auth.j
 CLIENT_ID = CREDS.service_account_email
 
 
-def sign_url(bucket_object, expires_after_seconds=6, bucket="lloyd-test-pipeline"):
+def sign_url(
+    bucket_object: str,
+    expires_after_seconds: int = 6,
+    bucket: str = "lloyd-test-pipeline",
+) -> str:
+    """
+    Function that generates signed URLs.
+
+    Arguments:
+        bucket_object {str} -- Path of file inside the bucket.
+
+    Keyword Arguments:
+        expires_after_seconds {int} -- Length of time url is valid. (default: {6})
+        bucket {str} -- The google storage bucket the file is in. (default: {"lloyd-test-pipeline"})
+
+    Returns:
+        str -- A signed download url.
+    """
     method = "GET"
     gcs_filename = urllib.parse.quote("/%s/%s" % (bucket, bucket_object))
     content_md5, content_type = None, None
@@ -543,7 +560,9 @@ def generate_signed_url(response: dict) -> None:
         None -- [description]
     """
     url = response["gs_uri"]
-    signed_url = sign_url(url.replace("gs://lloyd-test-pipeline/", ""), expires_after_seconds=1000)
+    signed_url = sign_url(
+        url.replace("gs://lloyd-test-pipeline/", ""), expires_after_seconds=1000
+    )
     response["download_link"] = signed_url
 
 
