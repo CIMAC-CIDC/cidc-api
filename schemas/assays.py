@@ -15,7 +15,7 @@ ASSAYS = {
             'required': True,
             'unique': True
         },
-        'wdl_location': {
+        'workflow_location': {
             'type': 'string'
         },
         'assay_name': {

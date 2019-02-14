@@ -162,8 +162,7 @@ def check_for_analysis(items: List[dict]) -> None:
     Arguments:
         items {[dict]} -- list of data records
     """
-    start_celery_task("framework.tasks.analysis_tasks.analysis_pipeline", [], 678)
-    start_celery_task("framework.tasks.processing_tasks.postprocessing", [items], 91011)
+    start_celery_task("framework.tasks.snakemake_tasks.manage_workflows", [], 678)
 
 
 # on updated data.
