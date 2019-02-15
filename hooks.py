@@ -71,6 +71,7 @@ def get_current_user():
         str -- User GID
     """
     # Try to get the user twice in case of any weird sync issues.
+    current_user = None
     for i in range(4):
         try:
             current_user = _request_ctx_stack.top.current_user
