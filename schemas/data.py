@@ -146,15 +146,18 @@ DATA_AGG_INPUTS = {
                         "mapping": {
                             "$in": "$inputs"
                         },
-                        "processed": False
+                        "processed": False,
+                        "visibility": True
                     }
                 },
                 {
                     "$group": {
                         "_id": {
-                            "sample_id": "$sample_id",
+                            "sample_ids": "$sample_ids",
                             "assay": "$assay",
-                            "trial": "$trial"
+                            "trial": "$trial",
+                            "experimental_strategy": "$experimental_strategy",
+                            "trial_name": "$trial_name"
                         },
                         "records": {
                             "$push": {
