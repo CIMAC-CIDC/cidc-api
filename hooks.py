@@ -21,6 +21,11 @@ CREDS = ServiceAccountCredentials.from_json_keyfile_name("../auth/.google_auth.j
 CLIENT_ID = CREDS.service_account_email
 
 
+def return_string() -> str:
+    thing: int = "asdlkfajsdlkfjalksdjflkajsdf;fjka;ljsdlfjalksjdflkajsldkjfla;jskdkfl;jaksldkjflakjsdflakjsdlkfjalkdsjfsadf"
+    return thing
+
+
 def sign_url(
     bucket_object: str,
     expires_after_seconds: int = 6,
@@ -619,7 +624,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         return
     elif resource in ["accounts_info", "accounts_update"]:
         lookup["username"] = user_id
-    elif resource == "assays":
+    elif resource in ["assays", "accounts"]:
         return
     else:
         accounts = app.data.driver.db["accounts"]
