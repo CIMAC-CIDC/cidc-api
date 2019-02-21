@@ -137,7 +137,7 @@ DB_ACCOUNTS_INFO = {
 
 DB_ACCOUNTS_UPDATE = {
     'public_methods': [],
-    'resource_methods': ['GET'],
+    'resource_methods': ['POST', 'GET'],
     'item_methods': ['PATCH', 'GET'],
     'allowed_item_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
     'datasource': {
