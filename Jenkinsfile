@@ -47,7 +47,9 @@ spec:
         container('python') {
           checkout scm
           sh 'pip3 install -r requirements.txt'
-          sh 'pytest --html=api_tests.html'
+          sh 'pip3 uninstall bson --yes'
+          sh 'pip3 uninstall pymongo --yes'
+          sh 'pip3 install pymongo --user'
           sh 'pytest --cov-report xml:coverage.xml --cov ./'
           sh 'curl -s https://codecov.io/bash | bash -s - -t ${CODECOV_TOKEN}'
         }
