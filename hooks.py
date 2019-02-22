@@ -271,31 +271,6 @@ def log_accounts_updated(updates: dict, original: dict) -> None:
         log += "Changed: %s\n" % json.dumps(update)
 
 
-# On insert accounts_update
-def set_user_org(items: List[dict]) -> None:
-    """
-    When a user is "inserted" from account updates, reads the body
-    and sets the org.
-
-    Arguments:
-        items {List[dict]} -- [description]
-
-    Returns:
-        None -- [description]
-    """
-    accounts_update = app.data.driver.db["accounts"]
-    email = get_current_user()["email"]
-    for user in items:
-        update = {"$set": {"organization": user["organization"]}}
-        if "first_n" in user:
-            update["$set"]["first_n"] = user["first_n"]
-        if "last_n" in user:
-            update["$set"]["last_n"] = user["last_n"]
-        accounts_update.update(
-            {"email": email}, update
-        )
-
-
 # On updated user.
 def log_user_modified(updates: dict, original: dict) -> None:
     """

@@ -137,19 +137,13 @@ DB_ACCOUNTS_INFO = {
 
 DB_ACCOUNTS_UPDATE = {
     'public_methods': [],
-    'resource_methods': ['POST', 'GET'],
-    'item_methods': ['PATCH', 'GET'],
+    'resource_methods': [],
+    'item_methods': ['PATCH'],
     'allowed_item_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
     'datasource': {
         'source': 'accounts'
     },
     'schema': {
-        'email': {
-            'type': 'string',
-            'regex': r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
-            'required': False,
-            'unique': True
-        },
         'organization': {
             'type': 'string',
             'required': True
@@ -159,18 +153,6 @@ DB_ACCOUNTS_UPDATE = {
             'required': False
         },
         'last_n': {
-            'type': 'string',
-            'required': False
-        },
-        'registered': {
-            'type': 'boolean',
-            'required': False
-        },
-        'registration_submit_date': {
-            'type': 'string',
-            'required': False
-        },
-        'position_description': {
             'type': 'string',
             'required': False
         }

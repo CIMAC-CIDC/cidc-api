@@ -398,7 +398,6 @@ def add_hooks():
     APP.on_updated_accounts += hooks.log_user_modified  # pylint: disable=E1101
     APP.on_inserted_accounts_info += hooks.log_user_create  # pylint: disable=E1101
     APP.on_update_accounts_update += hooks.log_accounts_updated  # pylint: disable=E1101
-    APP.on_insert_accounts_update += hooks.set_user_org
 
     # Gene symbol hooks
     APP.on_deleted_gene_symbols += hooks.drop_gene_symbol  # pylint: disable=E1101
