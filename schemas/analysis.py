@@ -1,7 +1,6 @@
 """
 Validator for Analysis data.
 """
-
 ANALYSIS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
@@ -13,7 +12,7 @@ ANALYSIS = {
         },
         'end_date': {
             'type': 'string'
-        }
+        },
         'trial': {
             'type': 'objectid',
             'required': True
@@ -21,7 +20,7 @@ ANALYSIS = {
         'trial_name': {
             'type': 'string',
             'required': True
-        }
+        },
         'assay': {
             'type': 'objectid',
             'required': True
@@ -39,8 +38,11 @@ ANALYSIS = {
                         'type': 'string',
                         'required': True
                     },
-                    'log_location': {
-                        'type': 'string',
+                    'log_locations': {
+                        'type': 'list',
+                        'schema': {
+                            'type': 'string'
+                        },
                         'required': True
                     }
                 }
