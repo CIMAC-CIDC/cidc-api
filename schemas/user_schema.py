@@ -147,7 +147,7 @@ DB_ACCOUNTS_UPDATE = {
         'preferred_contact_email': {
             'type': 'string',
             'regex': r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
-            'required': True,
+            'required': False,
             'unique': True
         },
         'organization': {
@@ -156,15 +156,15 @@ DB_ACCOUNTS_UPDATE = {
         },
         'first_n': {
             'type': 'string',
-            'required': True
+            'required': False
         },
         'last_n': {
             'type': 'string',
-            'required': True
+            'required': False
         },
         'registered': {
             'type': 'boolean',
-            'required': True
+            'required': False
         },
         'registration_submit_date': {
             'type': 'string',
