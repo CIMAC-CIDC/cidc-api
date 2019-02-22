@@ -90,7 +90,7 @@ ITEM_METHODS = []
 
 X_DOMAINS = '*'
 
-X_HEADERS = ['Content-Type', 'If-Match', 'Authorization']
+X_HEADERS = ['Content-Type', 'If-Match', 'Authorization', 'X-HTTP-Method-Override']
 X_ALLOW_CREDENTIALS = True
 BANDWIDTH_SAVER = False
 CACHE_CONTROL = 'no-cache'
