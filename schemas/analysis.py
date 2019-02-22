@@ -11,27 +11,51 @@ ANALYSIS = {
         'start_date': {
             'type': 'string'
         },
+        'end_date': {
+            'type': 'string'
+        }
         'trial': {
             'type': 'objectid',
             'required': True
         },
+        'trial_name': {
+            'type': 'string',
+            'required': True
+        }
         'assay': {
             'type': 'objectid',
             'required': True
         },
-        'status': {
-            'type': 'dict',
+        'experimental_strategy': {
+            'type': 'string',
+            'required': True
+        },
+        'logs': {
+            'type': 'list',
             'schema': {
-                'progress': {
-                    'type': 'string',
-                    'allowed': ['In Progress', 'Completed', 'Aborted']
-                },
-                'message': {
-                    'type': 'string'
+                'type': 'dict',
+                'schema': {
+                    'job_id': {
+                        'type': 'string',
+                        'required': True
+                    },
+                    'log_location': {
+                        'type': 'string',
+                        'required': True
+                    }
                 }
             }
         },
-        'samples': {
+        'status': {
+            'type': 'str',
+            'allowed': ['In Progress', 'Completed', 'Aborted', 'Failed'],
+            'required': True
+        },
+        'error_message': {
+            'type': 'str',
+            'nullable': True
+        },
+        'sample_ids': {
             'type': 'list',
             'schema': {
                 'type': 'string'

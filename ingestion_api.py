@@ -189,7 +189,7 @@ def ensure_user_account_exists(email_address: str) -> None:
                     datetime.timezone.utc
                 ).isoformat(),
                 "role": "registrant",
-                "registered": False,
+                "registered": True,
                 "permissions": []
             }
         )
