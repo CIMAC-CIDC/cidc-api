@@ -88,6 +88,26 @@ ANALYSIS = {
             },
             'required': True
         },
+        'files_used': {
+            'type': 'list',
+            'schema': {
+                'type': 'dict',
+                'schema': {
+                    'file_name': {
+                        'type': 'string',
+                        'required': True
+                    },
+                    'gs_uri': {
+                        'type': 'string',
+                        'required': True
+                    },
+                    'data_id': {
+                        'type': 'objectid',
+                        'required': True
+                    }
+                }
+            }
+        },
         'files_generated': {
             'type': 'list',
             'schema': {

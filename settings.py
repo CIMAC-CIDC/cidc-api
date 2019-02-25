@@ -94,7 +94,6 @@ X_HEADERS = ['Content-Type', 'If-Match', 'Authorization', 'X-HTTP-Method-Overrid
 X_ALLOW_CREDENTIALS = True
 BANDWIDTH_SAVER = False
 CACHE_CONTROL = 'no-cache'
-CACHE_EXPIRES = 0
 
 DOMAIN = {
     'ingestion': schemas.INGESTION,
