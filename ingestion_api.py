@@ -148,7 +148,7 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
             resource,
             email,
         )
-        if not resource == "accounts":
+        if resource not in ["accounts", "accounts_info", "accounts_update"]:
             accounts.update(
                 {"_id": account["_id"]},
                 {
