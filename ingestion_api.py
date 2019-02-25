@@ -190,6 +190,9 @@ def ensure_user_account_exists(email_address: str) -> None:
             "role": "registrant",
             "registered": True,
             "permissions": [],
+            "first_n": "",
+            "last_n": "",
+            "preferred_contact_email": email_address
         }
         hooks.start_celery_task(
             "framework.tasks.administrative_tasks.add_new_user", [new_account], 9010102

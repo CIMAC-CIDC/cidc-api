@@ -28,9 +28,9 @@ Authlib = "*"
 pymongo = "*"
 
 [dev-packages]
-pylint = "*"
 "pep8" = "*"
 black = "*"
+"flake8" = "*"
 
 [requires]
 python_version = "3.6"

@@ -15,7 +15,8 @@ from flask import current_app as app
 from kombu import Connection, Exchange, Producer
 from oauth2client.service_account import ServiceAccountCredentials
 
-from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS
+from cidc_utils.loghandler.stack_driver_handler import send_mail
+from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS, SENDGRID_API_KEY
 
 CREDS = ServiceAccountCredentials.from_json_keyfile_name("../auth/.google_auth.json")
 CLIENT_ID = CREDS.service_account_email
@@ -263,12 +264,11 @@ def log_accounts_updated(updates: dict, original: dict) -> None:
         logging.error({"message": log, "category": "ERROR-EVE-FAIR"})
         abort(500, "NO_ADMIN_FOUND")
 
-    log = "Update to user %s made by %s: \n" % (
-        original["email"],
-        current_user["email"],
-    )
+    log = "Update to user %s made by %s: \n" % (original["_id"], current_user["email"])
     for update in updates:
         log += "Changed: %s\n" % json.dumps(update)
+
+    logging.info({"message": log, "category": "FAIR-EVE-USERUPDATE"})
 
 
 # On updated user.
@@ -298,12 +298,21 @@ def log_user_modified(updates: dict, original: dict) -> None:
         log += "Changed: %s\n" % json.dumps(update)
 
     if "role" in updates:
+        if updates["role"] == "registrant":
+            abort(500, "CANNOT_REVERT_TO_REGISTRANT")
         if updates["role"] == "uploader" and original["role"] == "registrant":
             # Grant upload access
             start_celery_task(
                 "framework.tasks.administrative_tasks.change_upload_permission",
                 [GOOGLE_UPLOAD_BUCKET, [original["email"]], True],
                 8787878,
+            )
+            # Send e-mail.
+            send_mail(
+                "CIDC: Registration approved.",
+                "Your registration to the CIDC website has been approved, you may now log in.",
+                [updates["email"]],
+                SENDGRID_API_KEY
             )
         if updates["role"] == "disabled":
             # Revoke upload access
