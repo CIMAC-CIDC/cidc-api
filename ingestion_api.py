@@ -70,13 +70,13 @@ APP.config["SWAGGER_INFO"] = {
     "termsOfService": "To be added",
     "contact": {
         "name": "support",
-        "url": "https://github.com/dfci/cidc-ingestion-api/README"
+        "url": "https://github.com/dfci/cidc-ingestion-api/README",
     },
     "license": {
         "name": "MIT",
-        "url": "https://github.com/dfci/cidc-ingestion-api/blob/master/LICENSE"
+        "url": "https://github.com/dfci/cidc-ingestion-api/blob/master/LICENSE",
     },
-    "schemes": ["http", "https"]
+    "schemes": ["http", "https"],
 }
 
 
@@ -181,21 +181,22 @@ def ensure_user_account_exists(email_address: str) -> None:
     lookup_account = db_accounts.find_one({"username": email_address})
 
     if not lookup_account:
-        db_accounts.insert(
-            {
-                "username": email_address,
-                "email": email_address,
-                "account_create_date": datetime.datetime.now(
-                    datetime.timezone.utc
-                ).isoformat(),
-                "role": "registrant",
-                "registered": True,
-                "permissions": []
-            }
+        new_account = {
+            "username": email_address,
+            "email": email_address,
+            "account_create_date": datetime.datetime.now(
+                datetime.timezone.utc
+            ).isoformat(),
+            "role": "registrant",
+            "registered": True,
+            "permissions": [],
+            "first_n": "",
+            "last_n": "",
+            "preferred_contact_email": email_address
+        }
+        hooks.start_celery_task(
+            "framework.tasks.administrative_tasks.add_new_user", [new_account], 9010102
         )
-
-        log = "Creating document in ACCOUNTS collection for username %s" % email_address
-        logging.info({"message": log, "category": "INFO-EVE-LOGIN"})
 
 
 def token_auth(token: dict) -> str:
@@ -267,17 +268,17 @@ def token_auth(token: dict) -> str:
             audience=audience_to_verify,
             issuer="https://%s/" % AUTH0_DOMAIN,
             options={
-                'verify_signature': True,
-                'verify_aud': True,
-                'verify_iat': True,
-                'verify_exp': True,
-                'verify_nbf': True,
-                'verify_iss': True,
-                'verify_sub': True,
-                'verify_jti': True,
-                'verify_at_hash': False,
-                'leeway': 0,
-            }
+                "verify_signature": True,
+                "verify_aud": True,
+                "verify_iat": True,
+                "verify_exp": True,
+                "verify_nbf": True,
+                "verify_iss": True,
+                "verify_sub": True,
+                "verify_jti": True,
+                "verify_at_hash": False,
+                "leeway": 0,
+            },
         )
     except jwt.ExpiredSignatureError:
         logging.error(
@@ -288,8 +289,7 @@ def token_auth(token: dict) -> str:
         )
     except jwt.JWTClaimsError:
         logging.error(
-            {"message": "JWT Claims error", "category": "ERROR-EVE-AUTH"},
-            exc_info=True,
+            {"message": "JWT Claims error", "category": "ERROR-EVE-AUTH"}, exc_info=True
         )
         raise AuthError(
             {
@@ -314,8 +314,7 @@ def token_auth(token: dict) -> str:
                 }
             )
             raise AuthError(
-                {"code": "No_info", "description": "No userinfo found at endpoint"},
-                401,
+                {"code": "No_info", "description": "No userinfo found at endpoint"}, 401
             )
         payload["email"] = res.json()["email"]
     else:

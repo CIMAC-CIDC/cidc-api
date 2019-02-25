@@ -31,10 +31,10 @@ DB_USER = {
             'type': 'string',
         },
         'last_access': {
-            'type': 'date',
+            'type': 'string',
         },
         'account_create_date': {
-            'type': 'date',
+            'type': 'string',
         },
         'registration_submit_date': {
             'type': 'string',
