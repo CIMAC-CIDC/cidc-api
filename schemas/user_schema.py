@@ -10,8 +10,6 @@ DB_USER = {
     'item_methods': ['GET', 'PATCH', 'DELETE'],
     'allowed_roles': ['admin'],
     'allowed_item_roles': ['admin'],
-    'cache_control': '',
-    'cache_expires': 0,
     'schema': {
         'username': {
             'type': 'string',
