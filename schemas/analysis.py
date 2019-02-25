@@ -29,16 +29,40 @@ ANALYSIS = {
             'type': 'string',
             'required': True
         },
-        'logs': {
+        'snakemake_logs': {
+            'type': 'list',
+            'schema': {
+                'type': 'string'
+            },
+            'required': True
+        },
+        'jobs': {
             'type': 'list',
             'schema': {
                 'type': 'dict',
                 'schema': {
-                    'job_id': {
+                    'job_name': {
                         'type': 'string',
                         'required': True
                     },
                     'log_locations': {
+                        'type': 'list',
+                        'schema': {
+                            'type': 'string'
+                        }
+                    },
+                    'completed': {
+                        'type': 'boolean',
+                        'required': True,
+                    },
+                    'inputs': {
+                        'type': 'list',
+                        'schema': {
+                            'type': 'string'
+                        },
+                        'required': True
+                    },
+                    'outputs': {
                         'type': 'list',
                         'schema': {
                             'type': 'string'
@@ -61,10 +85,8 @@ ANALYSIS = {
             'type': 'list',
             'schema': {
                 'type': 'string'
-            }
-        },
-        'metadata_blob': {
-            'type': 'string'
+            },
+            'required': True
         },
         'files_generated': {
             'type': 'list',
@@ -77,6 +99,10 @@ ANALYSIS = {
                     },
                     'gs_uri': {
                         'type': 'string',
+                        'required': True
+                    },
+                    'data_id': {
+                        'type': 'objectid',
                         'required': True
                     }
                 }
