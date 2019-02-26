@@ -609,7 +609,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         )
 
     # Don't filter for machine.
-    if current_user["email"] == "celery-taskmanager":
+    if current_user["email"] == "celery-taskmanager" or current_user["role"] == "admin":
         return
 
     # Log the request

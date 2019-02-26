@@ -54,6 +54,9 @@ class BearerAuth(TokenAuth):
 
         email = token_auth(token)
         role = role_auth(email, allowed_roles, resource, method)
+        role_value = role["role"]
+        user = _request_ctx_stack.top.current_user
+        user["role"] = role_value
         return email and role
 
 
