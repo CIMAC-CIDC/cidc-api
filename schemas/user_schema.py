@@ -8,8 +8,8 @@ DB_USER = {
     'public_item_methods': [],
     'resource_methods': ['GET', 'POST', 'DELETE'],
     'item_methods': ['GET', 'PATCH', 'DELETE'],
-    'allowed_roles': ['admin'],
-    'allowed_item_roles': ['admin'],
+    'allowed_roles': ['admin', 'system'],
+    'allowed_item_roles': ['admin', 'system'],
     'schema': {
         'username': {
             'type': 'string',
@@ -53,7 +53,7 @@ DB_USER = {
         },
         'role': {
             'allowed': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer',
-                        'disabled'],
+                        'disabled', 'system'],
             'type': 'string',
             'required': True
         },
@@ -90,8 +90,10 @@ DB_USER = {
 DB_ACCOUNTS_INFO = {
     'public_methods': [],
     'resource_methods': ['GET'],
-    'allowed_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
-    'allowed_item_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
+    'allowed_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer', 'system'],
+    'allowed_item_roles': [
+        'registrant', 'reader', 'uploader', 'lead', 'admin', 'developer', 'system'
+        ],
     'item_methods': [],
     'datasource': {
         'source': 'accounts'
@@ -137,7 +139,9 @@ DB_ACCOUNTS_UPDATE = {
     'public_methods': [],
     'resource_methods': [],
     'item_methods': ['PATCH'],
-    'allowed_item_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
+    'allowed_item_roles': [
+        'registrant', 'reader', 'uploader', 'lead', 'admin', 'developer', 'system'
+        ],
     'datasource': {
         'source': 'accounts'
     },

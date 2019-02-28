@@ -16,8 +16,8 @@ def create_biomarker_schema(schema: dict) -> dict:
     base_dict = {
         "public_methods": [],
         "resource_methods": ["GET", "POST"],
-        "allowed_roles": ["user", "uploader", "admin"],
-        "allowed_item_roles": ["user", "uploader", "admin"],
+        "allowed_roles": ["user", "uploader", "admin", 'system'],
+        "allowed_item_roles": ["user", "uploader", "admin", 'system'],
         "schema": {
             "trial": {"type": "objectid", "required": True},
             "assay": {"type": "objectid", "required": True},

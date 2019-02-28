@@ -308,12 +308,13 @@ def log_user_modified(updates: dict, original: dict) -> None:
                 8787878,
             )
             # Send e-mail.
-            send_mail(
-                "CIDC: Registration approved.",
-                "Your registration to the CIDC website has been approved, you may now log in.",
-                [updates["email"]],
-                SENDGRID_API_KEY
-            )
+            # send_mail(
+            #     "CIDC: Registration approved.",
+            #     "Your registration to the CIDC website has been approved, you may now log in.",
+            #     [original["email"]],
+            #     "no-reply@cimac-network.org",
+            #     SENDGRID_API_KEY
+            # )
         if updates["role"] == "disabled":
             # Revoke upload access
             start_celery_task(
@@ -609,7 +610,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         )
 
     # Don't filter for machine.
-    if current_user["email"] == "celery-taskmanager" or current_user["role"] == "admin":
+    if current_user["email"] == "celery-taskmanager":
         return
 
     # Log the request

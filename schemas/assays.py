@@ -7,8 +7,8 @@ ASSAYS = {
     'public_methods': [],
     'resource_methods': ['GET'],
     'item_methods': ['GET'],
-    'allowed_roles': ['admin', 'superuser', 'user', 'uploader'],
-    'allowed_item_roles': ['admin', 'superuser', 'user', 'uploader'],
+    'allowed_roles': ['admin', 'superuser', 'user', 'uploader', 'system'],
+    'allowed_item_roles': ['admin', 'superuser', 'user', 'uploader', 'system'],
     'schema': {
         '_id': {
             'type': 'objectid',

@@ -187,7 +187,7 @@ def ensure_user_account_exists(email_address: str) -> None:
         new_account = {
             "username": email_address,
             "email": email_address,
-            "account_create_date": datetime.datetime.now(
+            "registration_submit_date": datetime.datetime.now(
                 datetime.timezone.utc
             ).isoformat(),
             "role": "registrant",
