@@ -4,11 +4,16 @@ Validator for Analysis data.
 ANALYSIS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
-    'allowed_roles': ['admin', 'superuser', 'user'],
-    'allowed_item_roles': ['admin', 'superuser', 'user'],
+    'item_methods': ['PATCH', 'GET'],
+    'allowed_roles': ['admin', 'superuser', 'user', 'system'],
+    'allowed_item_roles': ['admin', 'superuser', 'user', 'system'],
     'schema': {
         'start_date': {
             'type': 'string'
+        },
+        'workflow_location': {
+            'type': 'string',
+            'required': True
         },
         'end_date': {
             'type': 'string'
@@ -34,7 +39,6 @@ ANALYSIS = {
             'schema': {
                 'type': 'string'
             },
-            'required': True
         },
         'jobs': {
             'type': 'list',
@@ -73,12 +77,12 @@ ANALYSIS = {
             }
         },
         'status': {
-            'type': 'str',
+            'type': 'string',
             'allowed': ['In Progress', 'Completed', 'Aborted', 'Failed'],
             'required': True
         },
         'error_message': {
-            'type': 'str',
+            'type': 'string',
             'nullable': True
         },
         'sample_ids': {

@@ -51,10 +51,16 @@ class BearerAuth(TokenAuth):
             resource {str} -- Endpoint being accessed.
             method {str} -- HTTP method (GET, POST, PATCH, DELETE)
         """
-
-        email = token_auth(token)
-        role = role_auth(email, allowed_roles, resource, method)
-        return email and role
+        try:
+            email = token_auth(token)
+            role = role_auth(email, allowed_roles, resource, method)
+            if role and "role" in role:
+                role_value = role["role"]
+                user = _request_ctx_stack.top.current_user
+                user["role"] = role_value
+            return email and role
+        except KeyError:
+            return False
 
 
 REDIS_INSTANCE = redis.StrictRedis(host="localhost", port=6379, db=0)
@@ -184,7 +190,7 @@ def ensure_user_account_exists(email_address: str) -> None:
         new_account = {
             "username": email_address,
             "email": email_address,
-            "account_create_date": datetime.datetime.now(
+            "registration_submit_date": datetime.datetime.now(
                 datetime.timezone.utc
             ).isoformat(),
             "role": "registrant",
@@ -415,7 +421,6 @@ def add_hooks():
     APP.on_fetched_item_data += hooks.generate_signed_url  # pylint: disable=E1101
 
     # Analysis Hooks
-    APP.on_insert_analysis += hooks.register_analysis  # pylint: disable=E1101
 
     # Pre get filter hook.
     APP.on_pre_GET += hooks.filter_on_id  # pylint: disable=E1101
