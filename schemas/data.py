@@ -107,8 +107,8 @@ DATA = {
 
 DATA_EDIT = {
     "public_methods": [],
-    "allowed_roles": ["admin"],
-    "allowed_item_roles": ["admin"],
+    "allowed_roles": ["admin", "system"],
+    "allowed_item_roles": ["admin", "system"],
     "resource_methods": ["POST"],
     "item_methods": ["PATCH"],
     "datasource": {
@@ -119,8 +119,8 @@ DATA_EDIT = {
 
 DATA_TOGGLE_VIS = {
     "public_methods": [],
-    "allowed_roles": ["admin", "user", "uploader"],
-    "allowed_item_roles": ["admin", "user", "uploader"],
+    "allowed_roles": ["admin", "user", "uploader", "system"],
+    "allowed_item_roles": ["admin", "user", "uploader", "system"],
     "resource_methods": ["GET"],
     "item_methods": ["PATCH"],
     "datasource": {

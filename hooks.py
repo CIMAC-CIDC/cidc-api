@@ -7,6 +7,7 @@ import json
 import logging
 import time
 import urllib
+import python_http_client
 from typing import List
 
 from bson import ObjectId, json_util
@@ -165,6 +166,7 @@ def check_for_analysis(items: List[dict]) -> None:
         items {[dict]} -- list of data records
     """
     start_celery_task("framework.tasks.snakemake_tasks.manage_workflows", [], 678)
+    start_celery_task("framework.tasks.processing_tasks.postprocessing", [items], 91011)
 
 
 # on updated data.
@@ -295,7 +297,7 @@ def log_user_modified(updates: dict, original: dict) -> None:
         current_user["email"],
     )
     for update in updates:
-        log += "Changed: %s\n" % json.dumps(update)
+        log += "Changed: %s:%s\n" % (json.dumps(update), json.dumps(str(updates[update])))
 
     if "role" in updates:
         if updates["role"] == "registrant":
@@ -308,13 +310,20 @@ def log_user_modified(updates: dict, original: dict) -> None:
                 8787878,
             )
             # Send e-mail.
-            # send_mail(
-            #     "CIDC: Registration approved.",
-            #     "Your registration to the CIDC website has been approved, you may now log in.",
-            #     [original["email"]],
-            #     "no-reply@cimac-network.org",
-            #     SENDGRID_API_KEY
-            # )
+            try:
+                send_mail(
+                    "CIDC: Registration approved.",
+                    "Your registration to the CIDC website has been approved, you may now log in.",
+                    [original["email"]],
+                    "noreply@cimac-network.org",
+                    SENDGRID_API_KEY
+                )
+            except python_http_client.exceptions.BadRequestsError as bre:
+                error_str = str(bre)
+                logging.error({
+                    "message": error_str,
+                    "category": "ERROR-EVE-EMAIL"
+                })
         if updates["role"] == "disabled":
             # Revoke upload access
             start_celery_task(
@@ -344,29 +353,6 @@ def serialize_objectids(items: List[dict]) -> None:
             record["file_name"],
             str(record["trial"]),
             str(record["assay"]),
-        )
-        logging.info({"message": log, "category": "INFO-EVE-DATA"})
-
-
-# On insert analysis.
-def register_analysis(items: List[dict]) -> None:
-    """
-    Add fields that should be created only by the server like start date to
-    each analysis object that is being inserted.
-
-    Arguments:
-        items {List[dict]} -- List of analysis records.
-    """
-    for analysis in items:
-        analysis["status"] = {"progress": "In Progress", "message": ""}
-        analysis["start_date"] = datetime.datetime.now(
-            datetime.timezone.utc
-        ).isoformat()
-        analysis["started_by"] = get_current_user()["email"]
-        log = "Analysis starrted for trial %s on assay %s by %s" % (
-            str(analysis["trial"]),
-            str(analysis["assay"]),
-            analysis["started_by"],
         )
         logging.info({"message": log, "category": "INFO-EVE-DATA"})
 
