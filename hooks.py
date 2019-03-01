@@ -7,6 +7,7 @@ import json
 import logging
 import time
 import urllib
+import python_http_client
 from typing import List
 
 from bson import ObjectId, json_util
@@ -15,13 +16,31 @@ from flask import current_app as app
 from kombu import Connection, Exchange, Producer
 from oauth2client.service_account import ServiceAccountCredentials
 
-from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS
+from cidc_utils.loghandler.stack_driver_handler import send_mail
+from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS, SENDGRID_API_KEY
 
 CREDS = ServiceAccountCredentials.from_json_keyfile_name("../auth/.google_auth.json")
 CLIENT_ID = CREDS.service_account_email
 
 
-def sign_url(bucket_object, expires_after_seconds=6, bucket="lloyd-test-pipeline"):
+def sign_url(
+    bucket_object: str,
+    expires_after_seconds: int = 6,
+    bucket: str = "lloyd-test-pipeline",
+) -> str:
+    """
+    Function that generates signed URLs.
+
+    Arguments:
+        bucket_object {str} -- Path of file inside the bucket.
+
+    Keyword Arguments:
+        expires_after_seconds {int} -- Length of time url is valid. (default: {6})
+        bucket {str} -- The google storage bucket the file is in. (default: {"lloyd-test-pipeline"})
+
+    Returns:
+        str -- A signed download url.
+    """
     method = "GET"
     gcs_filename = urllib.parse.quote("/%s/%s" % (bucket, bucket_object))
     content_md5, content_type = None, None
@@ -54,6 +73,7 @@ def get_current_user():
         str -- User GID
     """
     # Try to get the user twice in case of any weird sync issues.
+    current_user = None
     for i in range(4):
         try:
             current_user = _request_ctx_stack.top.current_user
@@ -145,7 +165,7 @@ def check_for_analysis(items: List[dict]) -> None:
     Arguments:
         items {[dict]} -- list of data records
     """
-    start_celery_task("framework.tasks.analysis_tasks.analysis_pipeline", [], 678)
+    start_celery_task("framework.tasks.snakemake_tasks.manage_workflows", [], 678)
     start_celery_task("framework.tasks.processing_tasks.postprocessing", [items], 91011)
 
 
@@ -246,12 +266,11 @@ def log_accounts_updated(updates: dict, original: dict) -> None:
         logging.error({"message": log, "category": "ERROR-EVE-FAIR"})
         abort(500, "NO_ADMIN_FOUND")
 
-    log = "Update to user %s made by %s: \n" % (
-        original["email"],
-        current_user["email"],
-    )
+    log = "Update to user %s made by %s: \n" % (original["_id"], current_user["email"])
     for update in updates:
         log += "Changed: %s\n" % json.dumps(update)
+
+    logging.info({"message": log, "category": "FAIR-EVE-USERUPDATE"})
 
 
 # On updated user.
@@ -278,9 +297,11 @@ def log_user_modified(updates: dict, original: dict) -> None:
         current_user["email"],
     )
     for update in updates:
-        log += "Changed: %s\n" % json.dumps(update)
+        log += "Changed: %s:%s\n" % (json.dumps(update), json.dumps(str(updates[update])))
 
     if "role" in updates:
+        if updates["role"] == "registrant":
+            abort(500, "CANNOT_REVERT_TO_REGISTRANT")
         if updates["role"] == "uploader" and original["role"] == "registrant":
             # Grant upload access
             start_celery_task(
@@ -288,6 +309,21 @@ def log_user_modified(updates: dict, original: dict) -> None:
                 [GOOGLE_UPLOAD_BUCKET, [original["email"]], True],
                 8787878,
             )
+            # Send e-mail.
+            try:
+                send_mail(
+                    "CIDC: Registration approved.",
+                    "Your registration to the CIDC website has been approved, you may now log in.",
+                    [original["email"]],
+                    "noreply@cimac-network.org",
+                    SENDGRID_API_KEY
+                )
+            except python_http_client.exceptions.BadRequestsError as bre:
+                error_str = str(bre)
+                logging.error({
+                    "message": error_str,
+                    "category": "ERROR-EVE-EMAIL"
+                })
         if updates["role"] == "disabled":
             # Revoke upload access
             start_celery_task(
@@ -317,29 +353,6 @@ def serialize_objectids(items: List[dict]) -> None:
             record["file_name"],
             str(record["trial"]),
             str(record["assay"]),
-        )
-        logging.info({"message": log, "category": "INFO-EVE-DATA"})
-
-
-# On insert analysis.
-def register_analysis(items: List[dict]) -> None:
-    """
-    Add fields that should be created only by the server like start date to
-    each analysis object that is being inserted.
-
-    Arguments:
-        items {List[dict]} -- List of analysis records.
-    """
-    for analysis in items:
-        analysis["status"] = {"progress": "In Progress", "message": ""}
-        analysis["start_date"] = datetime.datetime.now(
-            datetime.timezone.utc
-        ).isoformat()
-        analysis["started_by"] = get_current_user()["email"]
-        log = "Analysis starrted for trial %s on assay %s by %s" % (
-            str(analysis["trial"]),
-            str(analysis["assay"]),
-            analysis["started_by"],
         )
         logging.info({"message": log, "category": "INFO-EVE-DATA"})
 
@@ -543,7 +556,9 @@ def generate_signed_url(response: dict) -> None:
         None -- [description]
     """
     url = response["gs_uri"]
-    signed_url = sign_url(url.replace("gs://lloyd-test-pipeline/", ""), expires_after_seconds=1000)
+    signed_url = sign_url(
+        url.replace("gs://lloyd-test-pipeline/", ""), expires_after_seconds=1000
+    )
     response["download_link"] = signed_url
 
 
@@ -600,7 +615,7 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         return
     elif resource in ["accounts_info", "accounts_update"]:
         lookup["username"] = user_id
-    elif resource == "assays":
+    elif resource in ["assays", "accounts"]:
         return
     else:
         accounts = app.data.driver.db["accounts"]

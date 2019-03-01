@@ -15,7 +15,6 @@ from eve import Eve
 from eve.auth import TokenAuth
 from eve_swagger import swagger
 from flask import _request_ctx_stack
-from flask import current_app as APP
 from flask import jsonify
 from authlib.flask.client import OAuth
 from jose import jwt
@@ -52,10 +51,16 @@ class BearerAuth(TokenAuth):
             resource {str} -- Endpoint being accessed.
             method {str} -- HTTP method (GET, POST, PATCH, DELETE)
         """
-
-        email = token_auth(token)
-        role = role_auth(email, allowed_roles, resource, method)
-        return email and role
+        try:
+            email = token_auth(token)
+            role = role_auth(email, allowed_roles, resource, method)
+            if role and "role" in role:
+                role_value = role["role"]
+                user = _request_ctx_stack.top.current_user
+                user["role"] = role_value
+            return email and role
+        except KeyError:
+            return False
 
 
 REDIS_INSTANCE = redis.StrictRedis(host="localhost", port=6379, db=0)
@@ -71,14 +76,15 @@ APP.config["SWAGGER_INFO"] = {
     "termsOfService": "To be added",
     "contact": {
         "name": "support",
-        "url": "https://github.com/dfci/cidc-ingestion-api/README"
+        "url": "https://github.com/dfci/cidc-ingestion-api/README",
     },
     "license": {
         "name": "MIT",
-        "url": "https://github.com/dfci/cidc-ingestion-api/blob/master/LICENSE"
+        "url": "https://github.com/dfci/cidc-ingestion-api/blob/master/LICENSE",
     },
-    "schemes": ["http", "https"]
+    "schemes": ["http", "https"],
 }
+
 
 # Format error response and append status code.
 class AuthError(Exception):
@@ -148,7 +154,7 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
             resource,
             email,
         )
-        if not resource == "accounts":
+        if resource not in ["accounts", "accounts_info", "accounts_update"]:
             accounts.update(
                 {"_id": account["_id"]},
                 {
@@ -181,21 +187,22 @@ def ensure_user_account_exists(email_address: str) -> None:
     lookup_account = db_accounts.find_one({"username": email_address})
 
     if not lookup_account:
-        db_accounts.insert(
-            {
-                "username": email_address,
-                "email": email_address,
-                "account_create_date": datetime.datetime.now(
-                    datetime.timezone.utc
-                ).isoformat(),
-                "role": "registrant",
-                "registered": False,
-                "permissions": []
-            }
+        new_account = {
+            "username": email_address,
+            "email": email_address,
+            "registration_submit_date": datetime.datetime.now(
+                datetime.timezone.utc
+            ).isoformat(),
+            "role": "registrant",
+            "registered": True,
+            "permissions": [],
+            "first_n": "",
+            "last_n": "",
+            "preferred_contact_email": email_address
+        }
+        hooks.start_celery_task(
+            "framework.tasks.administrative_tasks.add_new_user", [new_account], 9010102
         )
-
-        log = "Creating document in ACCOUNTS collection for username %s" % email_address
-        logging.info({"message": log, "category": "INFO-EVE-LOGIN"})
 
 
 def token_auth(token: dict) -> str:
@@ -267,17 +274,17 @@ def token_auth(token: dict) -> str:
             audience=audience_to_verify,
             issuer="https://%s/" % AUTH0_DOMAIN,
             options={
-                'verify_signature': True,
-                'verify_aud': True,
-                'verify_iat': True,
-                'verify_exp': True,
-                'verify_nbf': True,
-                'verify_iss': True,
-                'verify_sub': True,
-                'verify_jti': True,
-                'verify_at_hash': False,
-                'leeway': 0,
-            }
+                "verify_signature": True,
+                "verify_aud": True,
+                "verify_iat": True,
+                "verify_exp": True,
+                "verify_nbf": True,
+                "verify_iss": True,
+                "verify_sub": True,
+                "verify_jti": True,
+                "verify_at_hash": False,
+                "leeway": 0,
+            },
         )
     except jwt.ExpiredSignatureError:
         logging.error(
@@ -288,8 +295,7 @@ def token_auth(token: dict) -> str:
         )
     except jwt.JWTClaimsError:
         logging.error(
-            {"message": "JWT Claims error", "category": "ERROR-EVE-AUTH"},
-            exc_info=True,
+            {"message": "JWT Claims error", "category": "ERROR-EVE-AUTH"}, exc_info=True
         )
         raise AuthError(
             {
@@ -314,8 +320,7 @@ def token_auth(token: dict) -> str:
                 }
             )
             raise AuthError(
-                {"code": "No_info", "description": "No userinfo found at endpoint"},
-                401,
+                {"code": "No_info", "description": "No userinfo found at endpoint"}, 401
             )
         payload["email"] = res.json()["email"]
     else:
@@ -394,37 +399,36 @@ def add_hooks():
     """
 
     # Accounts hooks
-    APP.on_inserted_accounts += hooks.log_user_create # pylint: disable=E1101
-    APP.on_updated_accounts += hooks.log_user_modified # pylint: disable=E1101
-    APP.on_inserted_accounts_info += hooks.log_user_create # pylint: disable=E1101
-    APP.on_update_accounts_updated += hooks.log_accounts_updated # pylint: disable=E1101
+    APP.on_inserted_accounts += hooks.log_user_create  # pylint: disable=E1101
+    APP.on_updated_accounts += hooks.log_user_modified  # pylint: disable=E1101
+    APP.on_inserted_accounts_info += hooks.log_user_create  # pylint: disable=E1101
+    APP.on_update_accounts_update += hooks.log_accounts_updated  # pylint: disable=E1101
 
     # Gene symbol hooks
-    APP.on_deleted_gene_symbols += hooks.drop_gene_symbol # pylint: disable=E1101
+    APP.on_deleted_gene_symbols += hooks.drop_gene_symbol  # pylint: disable=E1101
 
     # Ingestion Hooks
-    APP.on_updated_ingestion += hooks.process_data_upload # pylint: disable=E1101
-    APP.on_insert_ingestion += hooks.register_upload_job # pylint: disable=E1101
+    APP.on_updated_ingestion += hooks.process_data_upload  # pylint: disable=E1101
+    APP.on_insert_ingestion += hooks.register_upload_job  # pylint: disable=E1101
 
     # Data Hooks
-    APP.on_insert_data += hooks.serialize_objectids # pylint: disable=E1101
-    APP.on_inserted_data += hooks.check_for_analysis # pylint: disable=E1101
-    APP.on_updated_data += hooks.data_patched # pylint: disable=E1101
-    APP.on_inserted_data_edit += hooks.check_for_analysis # pylint: disable=E1101
-    APP.on_insert_data_edit += hooks.serialize_objectids # pylint: disable=E1101
-    APP.on_update_data_vis += hooks.user_visibility_toggle # pylint: disable=E1101
-    APP.on_fetched_item_data += hooks.generate_signed_url # pylint: disable=E1101
+    APP.on_insert_data += hooks.serialize_objectids  # pylint: disable=E1101
+    APP.on_inserted_data += hooks.check_for_analysis  # pylint: disable=E1101
+    APP.on_updated_data += hooks.data_patched  # pylint: disable=E1101
+    APP.on_inserted_data_edit += hooks.check_for_analysis  # pylint: disable=E1101
+    APP.on_insert_data_edit += hooks.serialize_objectids  # pylint: disable=E1101
+    APP.on_update_data_vis += hooks.user_visibility_toggle  # pylint: disable=E1101
+    APP.on_fetched_item_data += hooks.generate_signed_url  # pylint: disable=E1101
 
     # Analysis Hooks
-    APP.on_insert_analysis += hooks.register_analysis # pylint: disable=E1101
 
     # Pre get filter hook.
-    APP.on_pre_GET += hooks.filter_on_id # pylint: disable=E1101
+    APP.on_pre_GET += hooks.filter_on_id  # pylint: disable=E1101
 
     # Logging request related hooks
-    APP.on_post_PATCH += hooks.log_patch_request # pylint: disable=E1101
-    APP.on_post_POST += hooks.log_post_request # pylint: disable=E1101
-    APP.on_post_DELETE += hooks.log_delete_request # pylint: disable=E1101
+    APP.on_post_PATCH += hooks.log_patch_request  # pylint: disable=E1101
+    APP.on_post_POST += hooks.log_post_request  # pylint: disable=E1101
+    APP.on_post_DELETE += hooks.log_delete_request  # pylint: disable=E1101
 
 
 if __name__ == "__main__":

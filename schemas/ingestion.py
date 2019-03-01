@@ -9,8 +9,8 @@ INGESTION = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'item_methods': ['GET', 'PATCH'],
-    'allowed_roles': ['user', 'superuser', 'admin', 'uploader'],
-    'allowed_item_roles': ['user', 'superuser', 'admin', 'uploader'],
+    'allowed_roles': ['user', 'superuser', 'admin', 'uploader', 'system'],
+    'allowed_item_roles': ['user', 'superuser', 'admin', 'uploader', 'system'],
     'allowed_filters': ['started_by'],
     'schema': {
         'number_of_files': {

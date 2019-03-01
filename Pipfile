@@ -10,7 +10,7 @@ kombu = "==4.1.0"
 Flask = "==1.0.2"
 Flask-OAuthlib = "==0.9.5"
 "nose2" = "==0.7.4"
-Eve = "==0.8"
+Eve = "*"
 python-dotenv = "*"
 Cerberus = "==1.2"
 cidc_utils = {git = "https://github.com/CIMAC-CIDC/cidc-utils"}
@@ -24,14 +24,13 @@ pytest-html = "*"
 Eve-Swagger = "*"
 requests-oauthlib = "==0.8.0"
 "oauth2client" = "*"
-eve = "*"
+Authlib = "*"
 pymongo = "*"
-authlib = "*"
 
 [dev-packages]
-pylint = "*"
 "pep8" = "*"
 black = "*"
+"flake8" = "*"
 
 [requires]
 python_version = "3.6"

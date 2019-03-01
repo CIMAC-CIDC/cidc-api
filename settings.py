@@ -19,6 +19,7 @@ GOOGLE_URL = env.get('GOOGLE_URL')
 GOOGLE_FOLDER_PATH = env.get('GOOGLE_FOLDER_PATH')
 GOOGLE_UPLOAD_BUCKET = env.get("GOOGLE_UPLOAD_BUCKET")
 RABBIT_MQ_ADDRESS = 'amqp://rabbitmq'
+SENDGRID_API_KEY = env.get('SENDGRID_API_KEY')
 
 # Default credentials for a local mongodb, do NOT use for production
 MONGO_HOST = 'localhost'
@@ -90,11 +91,10 @@ ITEM_METHODS = []
 
 X_DOMAINS = '*'
 
-X_HEADERS = ['Content-Type', 'If-Match', 'Authorization']
+X_HEADERS = ['Content-Type', 'If-Match', 'Authorization', 'X-HTTP-Method-Override']
 X_ALLOW_CREDENTIALS = True
 BANDWIDTH_SAVER = False
 CACHE_CONTROL = 'no-cache'
-CACHE_EXPIRES = 0
 
 DOMAIN = {
     'ingestion': schemas.INGESTION,

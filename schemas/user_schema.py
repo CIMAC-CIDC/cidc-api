@@ -8,10 +8,8 @@ DB_USER = {
     'public_item_methods': [],
     'resource_methods': ['GET', 'POST', 'DELETE'],
     'item_methods': ['GET', 'PATCH', 'DELETE'],
-    'allowed_roles': ['admin'],
-    'allowed_item_roles': ['admin'],
-    'cache_control': '',
-    'cache_expires': 0,
+    'allowed_roles': ['admin', 'system'],
+    'allowed_item_roles': ['admin', 'system'],
     'schema': {
         'username': {
             'type': 'string',
@@ -33,10 +31,10 @@ DB_USER = {
             'type': 'string',
         },
         'last_access': {
-            'type': 'date',
+            'type': 'string',
         },
         'account_create_date': {
-            'type': 'date',
+            'type': 'string',
         },
         'registration_submit_date': {
             'type': 'string',
@@ -55,7 +53,7 @@ DB_USER = {
         },
         'role': {
             'allowed': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer',
-                        'disabled'],
+                        'disabled', 'system'],
             'type': 'string',
             'required': True
         },
@@ -92,8 +90,10 @@ DB_USER = {
 DB_ACCOUNTS_INFO = {
     'public_methods': [],
     'resource_methods': ['GET'],
-    'allowed_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
-    'allowed_item_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
+    'allowed_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer', 'system'],
+    'allowed_item_roles': [
+        'registrant', 'reader', 'uploader', 'lead', 'admin', 'developer', 'system'
+        ],
     'item_methods': [],
     'datasource': {
         'source': 'accounts'
@@ -137,40 +137,24 @@ DB_ACCOUNTS_INFO = {
 
 DB_ACCOUNTS_UPDATE = {
     'public_methods': [],
-    'resource_methods': ['GET'],
-    'item_methods': ['PATCH', 'GET'],
-    'allowed_item_roles': ['registrant', 'reader', 'uploader', 'lead', 'admin', 'developer'],
+    'resource_methods': [],
+    'item_methods': ['PATCH'],
+    'allowed_item_roles': [
+        'registrant', 'reader', 'uploader', 'lead', 'admin', 'developer', 'system'
+        ],
     'datasource': {
         'source': 'accounts'
     },
     'schema': {
-        'preferred_contact_email': {
-            'type': 'string',
-            'regex': r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
-            'required': True,
-            'unique': True
-        },
         'organization': {
             'type': 'string',
             'required': True
         },
         'first_n': {
             'type': 'string',
-            'required': True
-        },
-        'last_n': {
-            'type': 'string',
-            'required': True
-        },
-        'registered': {
-            'type': 'boolean',
-            'required': True
-        },
-        'registration_submit_date': {
-            'type': 'string',
             'required': False
         },
-        'position_description': {
+        'last_n': {
             'type': 'string',
             'required': False
         }

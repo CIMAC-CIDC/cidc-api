@@ -1,11 +1,13 @@
-"""Unit test file for the ingestion API
+"""
+Unit test file for the ingestion API
 """
 import unittest
 from settings import DOMAIN
 
 
 class TestAPICalls(unittest.TestCase):
-    """[summary]
+    """
+    Small test class for checking that all endpoints have rules.
 
     Arguments:
         unittest {[type]} -- [description]
