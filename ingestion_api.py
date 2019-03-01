@@ -350,6 +350,12 @@ def after_request(response):
     """
     response.headers.add("google_url", APP.config["GOOGLE_URL"])
     response.headers.add("google_folder_path", APP.config["GOOGLE_UPLOAD_BUCKET"])
+    try:
+        auth_header = response.headers.pop("WWW-Authenticate")
+        response.headers.add("WWW-Authenticate", auth_header.replace("Basic", "xBasic"))
+    except KeyError:
+        pass
+
     return response
 
 
