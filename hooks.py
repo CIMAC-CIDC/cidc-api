@@ -463,9 +463,7 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
     Returns:
         None -- [description]
     """
-    # Get current user.
-    current_user = get_current_user()
-
+    current_user = get_current_user()["email"]
     # Log the request
     try:
         log = (
@@ -473,7 +471,7 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
             Request structure: %s. Patch status: %s"
             % (
                 resource,
-                current_user["email"],
+                current_user,
                 request.method,
                 request.url,
                 str(payload.status_code),
@@ -483,7 +481,7 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
     except TypeError:
         log = {
             "Patch request failed for resource %s, by user %s."
-            % (resource, current_user["email"])
+            % current_user
         }
         logging.info({"message": log, "category": "ERROR-EVE-PATCH-REQUEST"})
 
