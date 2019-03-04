@@ -350,17 +350,17 @@ def log_user_modified(updates: dict, original: dict) -> None:
                 8787878,
             )
             # Send e-mail.
-            try:
-                send_mail(
-                    "CIDC: Registration approved.",
-                    "Your registration to the CIDC website has been approved, you may now log in.",
-                    [original["email"]],
-                    "noreply@cimac-network.org",
-                    SENDGRID_API_KEY,
-                )
-            except python_http_client.exceptions.BadRequestsError as bre:
-                error_str = str(bre)
-                logging.error({"message": error_str, "category": "ERROR-EVE-EMAIL"})
+            # try:
+            #     send_mail(
+            #         "CIDC: Registration approved.",
+            #         "Your registration to the CIDC website has been approved, you may now log in.",
+            #         [original["email"]],
+            #         "noreply@cimac-network.org",
+            #         SENDGRID_API_KEY,
+            #     )
+            # except python_http_client.exceptions.BadRequestsError as bre:
+            #     error_str = str(bre)
+            #     logging.error({"message": error_str, "category": "ERROR-EVE-EMAIL"})
         if updates["role"] == "disabled":
             # Revoke upload access
             start_celery_task(
