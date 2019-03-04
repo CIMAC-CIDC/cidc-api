@@ -5,8 +5,8 @@ ANALYSIS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
     'item_methods': ['PATCH', 'GET'],
-    'allowed_roles': ['admin', 'superuser', 'user', 'system'],
-    'allowed_item_roles': ['admin', 'superuser', 'user', 'system'],
+    'allowed_roles': ['admin', 'superuser', 'user', 'system', 'uploader'],
+    'allowed_item_roles': ['admin', 'superuser', 'user', 'system', 'uploader'],
     'schema': {
         'start_date': {
             'type': 'string'

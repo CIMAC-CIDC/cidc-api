@@ -169,7 +169,36 @@ def check_for_analysis(items: List[dict]) -> None:
     start_celery_task("framework.tasks.processing_tasks.postprocessing", [items], 91011)
 
 
-# on updated data.
+# On updated trial.
+def updated_trial(updates: dict, original: dict) -> None:
+    """
+    Hook for updates to a trial. Looks for user changes and alters permissions.
+
+    Arguments:
+        updates {dict} -- Updates to the record.
+        original {dict} -- Original record.
+
+    Returns:
+        None -- [description]
+    """
+    new_collabs = updates["collaborators"]
+    old_collabs = original["collaborators"]
+    if new_collabs == old_collabs:
+        return
+
+    # Determine to be added
+    to_add = list(filter(lambda x: x not in old_collabs, new_collabs))
+
+    admin = get_current_user()["email"]
+    for user in to_add:
+        start_celery_task(
+            "framework.tasks.administrative_tasks.grant_trial_access",
+            [to_add, admin, original],
+            474747,
+        )
+
+
+# On updated data.
 def data_patched(updates: dict, original: dict) -> None:
     """
     Hook to watch for changes to data records, specifically visibility changes.
@@ -230,7 +259,7 @@ def user_visibility_toggle(updates, original) -> None:
         data_patched(updates, document)
 
 
-# On-inserted user.
+# On-inserted accounts.
 def log_user_create(items: List[dict]) -> None:
     """
     Hook for posts to user endpoint, logs creation of user.
@@ -267,6 +296,14 @@ def log_accounts_updated(updates: dict, original: dict) -> None:
         abort(500, "NO_ADMIN_FOUND")
 
     log = "Update to user %s made by %s: \n" % (original["_id"], current_user["email"])
+
+    # Serialize the oids.
+    if "permissions" in updates:
+        if "trial" in updates["permissions"]:
+            updates["permissions"]["trial"] = ObjectId(updates["permissions"]["trial"])
+        if "assay" in updates["permissions"]:
+            updates["permissions"]["assay"] = ObjectId(updates["assay"])
+
     for update in updates:
         log += "Changed: %s\n" % json.dumps(update)
 
@@ -297,7 +334,10 @@ def log_user_modified(updates: dict, original: dict) -> None:
         current_user["email"],
     )
     for update in updates:
-        log += "Changed: %s:%s\n" % (json.dumps(update), json.dumps(str(updates[update])))
+        log += "Changed: %s:%s\n" % (
+            json.dumps(update),
+            json.dumps(str(updates[update])),
+        )
 
     if "role" in updates:
         if updates["role"] == "registrant":
@@ -316,14 +356,11 @@ def log_user_modified(updates: dict, original: dict) -> None:
                     "Your registration to the CIDC website has been approved, you may now log in.",
                     [original["email"]],
                     "noreply@cimac-network.org",
-                    SENDGRID_API_KEY
+                    SENDGRID_API_KEY,
                 )
             except python_http_client.exceptions.BadRequestsError as bre:
                 error_str = str(bre)
-                logging.error({
-                    "message": error_str,
-                    "category": "ERROR-EVE-EMAIL"
-                })
+                logging.error({"message": error_str, "category": "ERROR-EVE-EMAIL"})
         if updates["role"] == "disabled":
             # Revoke upload access
             start_celery_task(
@@ -479,10 +516,7 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
         )
         logging.info({"message": log, "category": "INFO-EVE-PATCH-REQUEST"})
     except TypeError:
-        log = {
-            "Patch request failed for resource %s, by user %s."
-            % current_user
-        }
+        log = {"Patch request failed for resource %s, by user %s." % current_user}
         logging.info({"message": log, "category": "ERROR-EVE-PATCH-REQUEST"})
 
 
