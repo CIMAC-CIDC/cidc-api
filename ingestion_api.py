@@ -149,24 +149,13 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
     account = accounts.find_one(lookup)
 
     # If account found, update last access.
+    hooks.update_last_access(email)
+
     if account:
         log = "user roles for resource (%s) match scope, accepted: %s" % (
             resource,
             email,
         )
-        if resource not in ["accounts", "accounts_info", "accounts_update"]:
-            accounts.update(
-                {"_id": account["_id"]},
-                {
-                    "$set": {
-                        "last_access": datetime.datetime.now(
-                            datetime.timezone.utc
-                        ).isoformat()
-                    }
-                },
-            )
-
-            log = "User: %s last login updated" % email
     else:
         log = "failed permissions check for: %s" % email
 
