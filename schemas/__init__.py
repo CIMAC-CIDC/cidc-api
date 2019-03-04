@@ -15,3 +15,4 @@ from schemas.olink_schema import OLINK
 from schemas.metadata_schema import BIOREPOSITORY
 from schemas.hugo_schema import IDENTIFIER_SCHEMA
 from schemas.fastq_schema import FASTQ_SCHEMA
+from schemas.last_access import LAST_ACCESS

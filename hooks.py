@@ -7,7 +7,6 @@ import json
 import logging
 import time
 import urllib
-import python_http_client
 from typing import List
 
 from bson import ObjectId, json_util
@@ -16,11 +15,41 @@ from flask import current_app as app
 from kombu import Connection, Exchange, Producer
 from oauth2client.service_account import ServiceAccountCredentials
 
-from cidc_utils.loghandler.stack_driver_handler import send_mail
-from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS, SENDGRID_API_KEY
+from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS
 
 CREDS = ServiceAccountCredentials.from_json_keyfile_name("../auth/.google_auth.json")
 CLIENT_ID = CREDS.service_account_email
+
+
+def update_last_access(email: str):
+    """
+    Updates a user's last access time when they touch an endpoint.
+
+    Arguments:
+        email {str} -- User's email.
+    """
+    last_access = app.data.driver.db["last_access"]
+    if not last_access.find_one({"email": email}):
+        last_access.insert(
+            {
+                "email": email,
+                "last_access": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            }
+        )
+    else:
+        last_access.update(
+            {"email": email},
+            {
+                "$set": {
+                    "last_access": datetime.datetime.now(
+                        datetime.timezone.utc
+                    ).isoformat()
+                }
+            },
+        )
+
+    log = "User: %s last login updated" % email
+    logging.info({"message": log, "category": "FAIR-EVE-LOGIN"})
 
 
 def sign_url(
@@ -353,7 +382,8 @@ def log_user_modified(updates: dict, original: dict) -> None:
             # try:
             #     send_mail(
             #         "CIDC: Registration approved.",
-            #         "Your registration to the CIDC website has been approved, you may now log in.",
+            #         "Your registration to the CIDC website has been approved, you may now log in.
+            # ",
             #         [original["email"]],
             #         "noreply@cimac-network.org",
             #         SENDGRID_API_KEY,

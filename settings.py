@@ -97,20 +97,21 @@ BANDWIDTH_SAVER = False
 CACHE_CONTROL = 'no-cache'
 
 DOMAIN = {
-    'ingestion': schemas.INGESTION,
-    'data': schemas.DATA,
-    'trials': schemas.TRIALS,
-    'analysis': schemas.ANALYSIS,
-    'assays': schemas.ASSAYS,
-    'status': schemas.ANALYSIS_STATUS,
-    'data/query': schemas.DATA_AGG_INPUTS,
-    'data_edit': schemas.DATA_EDIT,
-    'data_vis': schemas.DATA_TOGGLE_VIS,
-    'clinical_data': schemas.CLINICAL_1021,
     'accounts': schemas.DB_USER,
     'accounts_info': schemas.DB_ACCOUNTS_INFO,
     'accounts_update': schemas.DB_ACCOUNTS_UPDATE,
+    'analysis': schemas.ANALYSIS,
+    'assays': schemas.ASSAYS,
+    'clinical_data': schemas.CLINICAL_1021,
+    'data': schemas.DATA,
+    'data_edit': schemas.DATA_EDIT,
+    'data_vis': schemas.DATA_TOGGLE_VIS,
+    'data/query': schemas.DATA_AGG_INPUTS,
+    'gene_symbols': schemas.IDENTIFIER_SCHEMA,
+    'ingestion': schemas.INGESTION,
+    'last_access': schemas.LAST_ACCESS,
     'olink': schemas.OLINK,
     'olink_meta': schemas.BIOREPOSITORY,
-    'gene_symbols': schemas.IDENTIFIER_SCHEMA
+    'status': schemas.ANALYSIS_STATUS,
+    'trials': schemas.TRIALS,
 }

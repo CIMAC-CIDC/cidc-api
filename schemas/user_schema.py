@@ -30,9 +30,6 @@ DB_USER = {
         'organization': {
             'type': 'string',
         },
-        'last_access': {
-            'type': 'string',
-        },
         'account_create_date': {
             'type': 'string',
         },
@@ -110,9 +107,6 @@ DB_ACCOUNTS_INFO = {
         },
         'organization': {
             'type': 'string'
-        },
-        'last_access': {
-            'type': 'date'
         },
         'registration_submit_date': {
             'type': 'string',
