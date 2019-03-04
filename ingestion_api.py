@@ -231,7 +231,7 @@ def token_auth(token: dict) -> str:
         unverified_header = jwt.get_unverified_header(token)
     except jwt.JWTError:
         logging.error(
-            {"message": "Biomarker upload failed", "category": "ERROR-CELERY-AUTH"},
+            {"message": "Problem fetched unverfied header", "category": "ERROR-CELERY-AUTH"},
             exc_info=True,
         )
 
@@ -426,6 +426,8 @@ def add_hooks():
     APP.on_update_data_vis += hooks.user_visibility_toggle  # pylint: disable=E1101
     APP.on_fetched_item_data += hooks.generate_signed_url  # pylint: disable=E1101
 
+    # Trials hooks
+    APP.on_updated_trials += hooks.updated_trial  # pylint: disable=E1101
     # Analysis Hooks
 
     # Pre get filter hook.
