@@ -39,7 +39,7 @@ DB_USER = {
             'type': 'string',
             'required': True
         },
-        'registered': {
+        'approved': {
             'type': 'boolean',
             'required': True
         },
