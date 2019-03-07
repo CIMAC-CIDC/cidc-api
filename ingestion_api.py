@@ -2,7 +2,6 @@
 """
 Configures and runs the API.
 """
-import datetime
 import json
 import logging
 from typing import List, Tuple
@@ -54,6 +53,8 @@ class BearerAuth(TokenAuth):
         try:
             email = token_auth(token)
             role = role_auth(email, allowed_roles, resource, method)
+            if resource == "accounts_create":
+                return True
             if role and "role" in role:
                 role_value = role["role"]
                 user = _request_ctx_stack.top.current_user
@@ -142,121 +143,62 @@ def role_auth(email: str, allowed_roles: List[str], resource: str, method: str) 
     """
     accounts = APP.data.driver.db["accounts"]
     lookup = {"email": email}
-
-    if allowed_roles:
-        lookup["role"] = {"$in": allowed_roles}
-
     account = accounts.find_one(lookup)
 
-    # If account found, update last access.
-    hooks.update_last_access(email)
-
+    # If account found...
     if account:
-        log = "user roles for resource (%s) match scope, accepted: %s" % (
-            resource,
+        hooks.update_last_access(email)  # Update last login.
+        # If its accounts info or create, just return true.
+        if resource in {"accounts_create", "accounts_info"}:
+            return lookup
+        # Otherwise, they need to be registered.
+        if not account["approved"]:
+            return None
+        # If they are registered, check permissions.
+        if account["role"] in allowed_roles:
+            log = "User roles for resource (%s) match scope, accepted: %s" % (
+                resource,
+                email,
+            )
+            logging.info({"message": log, "category": "FAIR-EVE-LOGIN"})
+            return account
+
+        log = "Permissions check failed for user: %s against resource %s" % (
             email,
+            resource,
         )
-    else:
-        log = "failed permissions check for: %s" % email
+        logging.info({"message": log, "category": "FAIR-EVE-FAILED-PERMISSIONS"})
+        return None
+    elif resource == "accounts_create":  # If no account, it has to be accounts_create.
+        return lookup
 
-    logging.info({"message": log, "category": "FAIR-EVE-LOGIN"})
-    return account
+    # Otherwise fail.
+    log = "Permissions check failed for unregistered user: %s against resource %s" % (
+        email,
+        resource,
+    )
+    logging.info({"message": log, "category": "FAIR-EVE-UNREGISTERED"})
+    return None
 
 
-def ensure_user_account_exists(email_address: str) -> None:
+def validate_payload(token: dict, rsa_key: str, audience_to_verify: str) -> dict:
     """
-    Take an email address and verify an account exists with that username.
-    This is useful for novel signups that we can't check a role for yet,
-    because the account doesn't exist. Default the role and applicable dates.
+    Decodes the token and checks it for validity.
 
     Arguments:
-        email {str} -- User email address.
-    """
-    db_accounts = APP.data.driver.db["accounts"]
-    lookup_account = db_accounts.find_one({"username": email_address})
-
-    if not lookup_account:
-        new_account = {
-            "username": email_address,
-            "email": email_address,
-            "registration_submit_date": datetime.datetime.now(
-                datetime.timezone.utc
-            ).isoformat(),
-            "role": "registrant",
-            "registered": True,
-            "permissions": [],
-            "first_n": "",
-            "last_n": "",
-            "preferred_contact_email": email_address
-        }
-        hooks.start_celery_task(
-            "framework.tasks.administrative_tasks.add_new_user", [new_account], 9010102
-        )
-
-
-def token_auth(token: dict) -> str:
-    """
-    Checks if the supplied token is valid.
-
-    Arguments:
-        token {dict} -- JWT token.
+        token {dict} -- JWT
+        rsa_key {str} -- rsa_key
+        audience_to_verify {str} -- parameter to use as the audience.
 
     Raises:
-        AuthError -- [description]
+        AuthError -- Caused by an expired signature.
+        AuthError -- Caused by invalid claims.
 
     Returns:
-        str -- Authorized user's email.
+        dict -- Decoded token as a dictionary.
     """
-    jwks = json.loads(urlopen("https://%s/.well-known/jwks.json" % AUTH0_DOMAIN).read())
-
-    if not token:
-        logging.warning(
-            {"message": "no token received", "category": "WARNING-EVE-AUTH"}
-        )
-        return False
-
-    unverified_header = None
     try:
-        unverified_header = jwt.get_unverified_header(token)
-    except jwt.JWTError:
-        logging.error(
-            {"message": "Problem fetched unverfied header", "category": "ERROR-CELERY-AUTH"},
-            exc_info=True,
-        )
-
-    if not jwks:
-        logging.warning({"message": "no jwks key", "category": "WARNING-EVE-AUTH"})
-        return False
-
-    rsa_key = {}
-    for key in jwks["keys"]:
-        if key["kid"] == unverified_header["kid"]:
-            rsa_key = {
-                "kty": key["kty"],
-                "kid": key["kid"],
-                "use": key["use"],
-                "n": key["n"],
-                "e": key["e"],
-            }
-
-    if not rsa_key:
-        logging.warning({"message": "no_rsa_key", "category": "WARNING-EVE-AUTH"})
-        raise AuthError({"code": "no_rsa_key", "description": "rsa_key is null"}, 401)
-
-    # Extract audience and see if it's either the
-    # ingestion APIs audience or the Portal's.
-    # This enables us to validate portal's tokens.
-    jwt_aud = jwt.get_unverified_claims(token)["aud"]
-
-    audience_to_verify = AUTH0_AUDIENCE
-    request_from_portal = False
-
-    if AUTH0_PORTAL_AUDIENCE and jwt_aud == AUTH0_PORTAL_AUDIENCE:
-        audience_to_verify = AUTH0_PORTAL_AUDIENCE
-        request_from_portal = True
-
-    try:
-        payload = jwt.decode(
+        return jwt.decode(
             token,
             rsa_key,
             algorithms=ALGORITHMS,
@@ -294,20 +236,103 @@ def token_auth(token: dict) -> str:
             401,
         )
 
+
+def check_user_exists(email: str) -> bool:
+    """[summary]
+
+    Arguments:
+        email {str} -- [description]
+
+    Returns:
+        bool -- [description]
+    """
+    db_accounts = APP.data.driver.db["accounts"]
+    lookup_account = db_accounts.find_one({"username": email})
+    return bool(lookup_account)
+
+
+def token_auth(token: dict) -> str:
+    """
+    Checks if the supplied token is valid.
+
+    Arguments:
+        token {dict} -- JWT token.
+
+    Raises:
+        AuthError -- [description]
+
+    Returns:
+        str -- Authorized user's email.
+    """
+    jwks = json.loads(urlopen("https://%s/.well-known/jwks.json" % AUTH0_DOMAIN).read())
+
+    if not token:
+        logging.warning(
+            {"message": "no token received", "category": "WARNING-EVE-AUTH"}
+        )
+        return False
+
+    unverified_header = None
+    try:
+        unverified_header = jwt.get_unverified_header(token)
+    except jwt.JWTError:
+        logging.error(
+            {
+                "message": "Problem fetched unverfied header",
+                "category": "ERROR-CELERY-AUTH",
+            },
+            exc_info=True,
+        )
+
+    if not jwks:
+        logging.warning({"message": "no jwks key", "category": "WARNING-EVE-AUTH"})
+        return False
+
+    rsa_key = {}
+    for key in jwks["keys"]:
+        if key["kid"] == unverified_header["kid"]:
+            rsa_key = {
+                "kty": key["kty"],
+                "kid": key["kid"],
+                "use": key["use"],
+                "n": key["n"],
+                "e": key["e"],
+            }
+
+    if not rsa_key:
+        logging.warning({"message": "no_rsa_key", "category": "WARNING-EVE-AUTH"})
+        raise AuthError({"code": "no_rsa_key", "description": "rsa_key is null"}, 401)
+
+    # Extract audience and see if it's either the
+    # ingestion APIs audience or the Portal's.
+    # This enables us to validate portal's tokens.
+    jwt_aud = jwt.get_unverified_claims(token)["aud"]
+    request_from_portal = False
+    audience_to_verify = AUTH0_AUDIENCE
+
+    if AUTH0_PORTAL_AUDIENCE and jwt_aud == AUTH0_PORTAL_AUDIENCE:
+        audience_to_verify = AUTH0_PORTAL_AUDIENCE
+        request_from_portal = True
+
+    try:
+        payload = validate_payload(token, rsa_key, audience_to_verify)
+    except AuthError as ate:
+        log = "Authorization failed: %s" % str(ate)
+        logging.error({"message": log, "category": "ERROR-EVE-AUTH"})
+        return None
+
     if request_from_portal:
-        ensure_user_account_exists(payload["email"])
+        if not check_user_exists(payload["email"]):
+            log = "User not registered: %s" % payload["email"]
+            logging.info({"message": log, "category": "EVE-AUTH-UNREGISTERED"})
     elif "gty" not in payload:
         res = requests.get(
             "https://%s/userinfo" % AUTH0_DOMAIN,
             headers={"Authorization": "Bearer {}".format(token)},
         )
         if not res.status_code == 200:
-            logging.error(
-                {
-                    "message": "There was an error fetching user information",
-                    "category": "ERROR-EVE-AUTH",
-                }
-            )
+            message = "There was an error fetching user information: %s" % res.reason
+            logging.error({"message": message, "category": "ERROR-EVE-AUTH"})
             raise AuthError(
                 {"code": "No_info", "description": "No userinfo found at endpoint"}, 401
             )
@@ -396,8 +421,10 @@ def add_hooks():
     # Accounts hooks
     APP.on_inserted_accounts += hooks.log_user_create  # pylint: disable=E1101
     APP.on_updated_accounts += hooks.log_user_modified  # pylint: disable=E1101
+    # APP.on_update_accounts += hooks.manage_user_updates
     APP.on_inserted_accounts_info += hooks.log_user_create  # pylint: disable=E1101
-    APP.on_update_accounts_update += hooks.log_accounts_updated  # pylint: disable=E1101
+    APP.on_insert_accounts_create += hooks.register_new_user  # pylint: disable=E1101
+    APP.on_deleted_item_accounts += hooks.remove_deleted_user  # pylint: disable=E1101
 
     # Gene symbol hooks
     APP.on_deleted_gene_symbols += hooks.drop_gene_symbol  # pylint: disable=E1101

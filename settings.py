@@ -99,7 +99,7 @@ CACHE_CONTROL = 'no-cache'
 DOMAIN = {
     'accounts': schemas.DB_USER,
     'accounts_info': schemas.DB_ACCOUNTS_INFO,
-    'accounts_update': schemas.DB_ACCOUNTS_UPDATE,
+    'accounts_create': schemas.DB_ACCOUNTS_CREATE,
     'analysis': schemas.ANALYSIS,
     'assays': schemas.ASSAYS,
     'clinical_data': schemas.CLINICAL_1021,
