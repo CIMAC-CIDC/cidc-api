@@ -1,20 +1,23 @@
-| Branch | Coverage |
-| --- | --- |
-| Master | [![codecov](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/master/graph/badge.svg)](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/master/) |
-| Staging | [![codecov](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/staging/graph/badge.svg)](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/staging/) |
+| Branch  | Coverage                                                                                                                                          | Codacy                                                                                                                                                                                                                                                           | Code Style                                                                                                        | License                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Master  | [![codecov](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/master/graph/badge.svg)](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/master/)   | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/6c9f0537475f46afa84f68923dd5f421)](https://www.codacy.com/app/CIMAC-CIDC/cidc-api?utm_source=github.com&utm_medium=referral&utm_content=CIMAC-CIDC/cidc-api&utm_campaign=Badge_Grade?branch=master)  | [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black) | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) |
+| Staging | [![codecov](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/staging/graph/badge.svg)](https://codecov.io/gh/CIMAC-CIDC/cidc-api/branch/staging/) | [![Codacy Badge](https://api.codacy.com/project/badge/Grade/6c9f0537475f46afa84f68923dd5f421)](https://www.codacy.com/app/CIMAC-CIDC/cidc-api?utm_source=github.com&utm_medium=referral&utm_content=CIMAC-CIDC/cidc-api&utm_campaign=Badge_Grade?branch=staging) | [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black) | [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) |
 
 ## CIDC-API
+
 This is the API that powers the CIDC project. It interacts with a MongoDB and controlls both user uploads of data, and user requests for data. This is designed primarily to be run as a helm chart on kubernetes, but can also be run as a docker image.
 
 ### Build
+
 To build the Docker image, simply run the `Dockerfile` in the root of the repository.
 
 ## Installation
+
 This application is not meant to be run outside of the context of a container such as Docker, Docker-Compose, or Kubernetes. The easiest way to install this application without building it yourself is to copy the Helm chart from our [helm repo](https://github.com/CIMAC-CIDC/cidc-devops/tree/master/kubernetes/helm/ingestion-api). And then use `helm install` to install the service on your kubernetes cluster.
 
 #### Running Tests
 
-To run unit tests: 
+To run unit tests:
 
     pipenv shell
     pytest
@@ -25,6 +28,6 @@ To generate an XML for code coverage plugins:
     pytest --cov-report xml:coverage.xml --cov ./
 
 To generate an HTML output:
-    
-    pipenv shell
-    pytest --html=report.html
+  
+ pipenv shell
+pytest --html=report.html

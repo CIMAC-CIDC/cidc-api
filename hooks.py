@@ -219,12 +219,11 @@ def updated_trial(updates: dict, original: dict) -> None:
     to_add = list(filter(lambda x: x not in old_collabs, new_collabs))
 
     admin = get_current_user()["email"]
-    for user in to_add:
-        start_celery_task(
-            "framework.tasks.administrative_tasks.grant_trial_access",
-            [to_add, admin, original],
-            474747,
-        )
+    start_celery_task(
+        "framework.tasks.administrative_tasks.grant_trial_access",
+        [to_add, admin, original],
+        474747,
+    )
 
 
 # On updated data.
@@ -303,40 +302,67 @@ def log_user_create(items: List[dict]) -> None:
         logging.info({"message": log, "category": "FAIR-EVE-NEWUSER"})
 
 
-# On update accounts_update
-def log_accounts_updated(updates: dict, original: dict) -> None:
+# On deleted accounts.
+def remove_deleted_user(item: dict) -> None:
     """
-    Logging function for the "accounts_info" endpoint.
+    Starts the celery task to remove the user from trials
+    and google buckets when they are deleted.
+
     Arguments:
-        updates {dict} -- updates to object
-        original {dict} -- original record.
+        item {dict} -- [description]
 
     Returns:
         None -- [description]
     """
-    current_user = None
-    try:
-        current_user = get_current_user()
-    except AttributeError as attr_err:
-        log = (
-            "Unable to determine source of user modification. Aborting. :%s" % attr_err
+    start_celery_task(
+        "framework.tasks.administrative_tasks.call_deactivate_account",
+        [item, "deactivate"],
+        187187187,
+    )
+
+
+# On insert accounts_create
+def register_new_user(items: List[dict]) -> None:
+    current_user = get_current_user()["email"]
+    for new_user in items:
+        new_user["email"] = current_user
+        user_updates = {
+            "email": current_user,
+            "approved": False,
+            "preferred_contact_email": current_user,
+            "account_create_date": datetime.datetime.now(
+                datetime.timezone.utc
+            ).isoformat(),
+            "permissions": [],
+        }
+        start_celery_task(
+            "framework.tasks.administrative_tasks.add_new_user", [user_updates], 9010102
         )
-        logging.error({"message": log, "category": "ERROR-EVE-FAIR"})
-        abort(500, "NO_ADMIN_FOUND")
 
-    log = "Update to user %s made by %s: \n" % (original["_id"], current_user["email"])
 
-    # Serialize the oids.
-    if "permissions" in updates:
-        if "trial" in updates["permissions"]:
-            updates["permissions"]["trial"] = ObjectId(updates["permissions"]["trial"])
-        if "assay" in updates["permissions"]:
-            updates["permissions"]["assay"] = ObjectId(updates["assay"])
+# On update user
+# def manage_user_updates(updates: dict, original: dict) -> None:
+#     """
+#     Hook that executes when an account is patched. Will stop any patch it can't
+#     determine the user for.
 
-    for update in updates:
-        log += "Changed: %s\n" % json.dumps(update)
+#     Arguments:
+#         updates {dict} -- [description]
+#         original {dict} -- [description]
+#     """
+#     try:
+#         current_user = get_current_user()
+#     except AttributeError as attr_err:
+#         log = (
+#             "Unable to determine source of user modification. Aborting. :%s" % attr_err
+#         )
+#         logging.error({"message": log, "category": "ERROR-EVE-FAIR"})
+#         abort(500, "NO_ADMIN_FOUND")
 
-    logging.info({"message": log, "category": "FAIR-EVE-USERUPDATE"})
+#     if "approved" in updates and updates["approved"]:
+#         updates["registration_approval_date"] = datetime.datetime.now(
+#             datetime.timezone.utc
+#         ).isoformat()
 
 
 # On updated user.
@@ -348,15 +374,7 @@ def log_user_modified(updates: dict, original: dict) -> None:
         updates {dict} -- Updates made to the user's record.
         original {dict} -- State of the user record before alteration.
     """
-    current_user = None
-    try:
-        current_user = get_current_user()
-    except AttributeError as attr_err:
-        log = (
-            "Unable to determine source of user modification. Aborting. :%s" % attr_err
-        )
-        logging.error({"message": log, "category": "ERROR-EVE-FAIR"})
-        abort(500, "NO_ADMIN_FOUND")
+    current_user = get_current_user()
 
     log = "Update to user %s made by %s: \n" % (
         original["email"],
@@ -368,29 +386,20 @@ def log_user_modified(updates: dict, original: dict) -> None:
             json.dumps(str(updates[update])),
         )
 
+    if "permissions" in updates:
+        if "trial" in updates["permissions"]:
+            updates["permissions"]["trial"] = ObjectId(updates["permissions"]["trial"])
+        if "assay" in updates["permissions"]:
+            updates["permissions"]["assay"] = ObjectId(updates["assay"])
+
     if "role" in updates:
-        if updates["role"] == "registrant":
-            abort(500, "CANNOT_REVERT_TO_REGISTRANT")
-        if updates["role"] == "uploader" and original["role"] == "registrant":
+        if updates["role"] and "role" not in original:
             # Grant upload access
             start_celery_task(
                 "framework.tasks.administrative_tasks.change_upload_permission",
                 [GOOGLE_UPLOAD_BUCKET, [original["email"]], True],
                 8787878,
             )
-            # Send e-mail.
-            # try:
-            #     send_mail(
-            #         "CIDC: Registration approved.",
-            #         "Your registration to the CIDC website has been approved, you may now log in.
-            # ",
-            #         [original["email"]],
-            #         "noreply@cimac-network.org",
-            #         SENDGRID_API_KEY,
-            #     )
-            # except python_http_client.exceptions.BadRequestsError as bre:
-            #     error_str = str(bre)
-            #     logging.error({"message": error_str, "category": "ERROR-EVE-EMAIL"})
         if updates["role"] == "disabled":
             # Revoke upload access
             start_celery_task(
@@ -534,8 +543,8 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
     # Log the request
     try:
         log = (
-            "Patch request made against resource %s by user %s. Method: %s.\
-            Request structure: %s. Patch status: %s"
+            "Patch request made against resource %s by user %s. Method: %s."
+            "Request structure: %s. Patch status: %s"
             % (
                 resource,
                 current_user,
@@ -675,8 +684,8 @@ def filter_on_id(resource: str, request: dict, lookup: dict) -> None:
         lookup["started_by"] = user_id
     elif resource == "trials":
         return
-    elif resource in ["accounts_info", "accounts_update"]:
-        lookup["username"] = user_id
+    elif resource == "accounts_info":
+        lookup["email"] = user_id
     elif resource in ["assays", "accounts"]:
         return
     else:
