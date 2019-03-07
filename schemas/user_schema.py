@@ -99,7 +99,7 @@ DB_ACCOUNTS_INFO = {
         'organization': {
             'type': 'string'
         },
-        'registration_submit_date': {
+        'registration_approval_date': {
             'type': 'string',
         },
         'first_n': {
@@ -108,7 +108,7 @@ DB_ACCOUNTS_INFO = {
         'last_n': {
             'type': 'string'
         },
-        'registered': {
+        'approved': {
             'type': 'boolean'
         },
         'role': {
