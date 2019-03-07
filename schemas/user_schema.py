@@ -24,6 +24,8 @@ DB_USER = {
         },
         'organization': {
             'type': 'string',
+            'allowed': ['CIDC', 'DFCI', 'ICAHN', 'STANFORD', 'ANDERSON'],
+            'required': True
         },
         'account_create_date': {
             'type': 'string',
@@ -99,6 +101,9 @@ DB_ACCOUNTS_INFO = {
         'organization': {
             'type': 'string'
         },
+        'account_create_date': {
+            'type': 'string',
+        },
         'registration_approval_date': {
             'type': 'string',
         },
@@ -116,6 +121,11 @@ DB_ACCOUNTS_INFO = {
         },
         'position_description': {
             'type': 'string'
+        },
+        'preferred_contact_email': {
+            'type': 'string',
+            'regex': r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',
+            'required': False
         }
     }
 }
