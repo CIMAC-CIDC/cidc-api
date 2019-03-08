@@ -141,6 +141,8 @@ DATA_TOGGLE_VIS = {
 }
 
 DATA_AGG_INPUTS = {
+    'allowed_roles': ["admin", "system"],
+    'allowed_item_roles': ["admin", "system"],
     'datasource': {
         'source': 'data',
         'aggregation': {

@@ -492,7 +492,7 @@ def process_data_upload(item: dict, original: dict) -> None:
     """
     google_path = app.config["GOOGLE_URL"] + app.config["GOOGLE_FOLDER_PATH"]
     start_celery_task(
-        "framework.tasks.cromwell_tasks.move_files_from_staging",
+        "framework.tasks.storage_tasks.move_files_from_staging",
         [original, google_path],
         12345,
     )
@@ -534,9 +534,6 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
         resource {str} -- Resource endpoint being queried.
         request {str} -- Request being sent to endpoint.
         payload {dict} -- Payload of the patch request.
-
-    Returns:
-        None -- [description]
     """
     current_user = get_current_user()["email"]
     # Log the request
