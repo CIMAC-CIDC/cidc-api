@@ -329,7 +329,6 @@ def register_new_user(items: List[dict]) -> None:
         user_updates = {
             "email": current_user,
             "approved": False,
-            "preferred_contact_email": current_user,
             "account_create_date": datetime.datetime.now(
                 datetime.timezone.utc
             ).isoformat(),
