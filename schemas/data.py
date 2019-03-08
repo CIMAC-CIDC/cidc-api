@@ -77,6 +77,10 @@ DATA = {
         'visibility': {
             'type': 'boolean'
         },
+        'uuid_alias': {
+            'type': 'string',
+            'required': True,
+        },
         'children': {
             'type': 'list',
             'schema': {
