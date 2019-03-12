@@ -9,13 +9,14 @@ import time
 import urllib
 from typing import List
 
+from cidc_utils.loghandler.stack_driver_handler import send_mail
 from bson import ObjectId, json_util
 from flask import _request_ctx_stack, abort
 from flask import current_app as app
 from kombu import Connection, Exchange, Producer
 from oauth2client.service_account import ServiceAccountCredentials
 
-from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS
+from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS, SENDGRID_API_KEY
 
 CREDS = ServiceAccountCredentials.from_json_keyfile_name("../auth/.google_auth.json")
 CLIENT_ID = CREDS.service_account_email
@@ -334,34 +335,48 @@ def register_new_user(items: List[dict]) -> None:
             ).isoformat(),
             "permissions": [],
         }
+        send_mail(
+            "New user registered.",
+            "A new user: %s has registered" % new_user["email"],
+            ["cidc@jimmy.harvard.edu"],
+            "no-reply@cimac-network.org",
+            SENDGRID_API_KEY,
+        )
         start_celery_task(
             "framework.tasks.administrative_tasks.add_new_user", [user_updates], 9010102
         )
 
 
 # On update user
-# def manage_user_updates(updates: dict, original: dict) -> None:
-#     """
-#     Hook that executes when an account is patched. Will stop any patch it can't
-#     determine the user for.
+def manage_user_updates(updates: dict, original: dict) -> None:
+    """
+    Hook that executes when an account is patched. Will stop any patch it can't
+    determine the user for.
 
-#     Arguments:
-#         updates {dict} -- [description]
-#         original {dict} -- [description]
-#     """
-#     try:
-#         current_user = get_current_user()
-#     except AttributeError as attr_err:
-#         log = (
-#             "Unable to determine source of user modification. Aborting. :%s" % attr_err
-#         )
-#         logging.error({"message": log, "category": "ERROR-EVE-FAIR"})
-#         abort(500, "NO_ADMIN_FOUND")
+    Arguments:
+        updates {dict} -- [description]
+        original {dict} -- [description]
+    """
+    try:
+        current_user = get_current_user()["email"]
+    except AttributeError as attr_err:
+        log = (
+            "Unable to determine source of user modification. Aborting. :%s" % attr_err
+        )
+        logging.error({"message": log, "category": "ERROR-EVE-FAIR"})
+        abort(500, "NO_ADMIN_FOUND")
 
-#     if "approved" in updates and updates["approved"]:
-#         updates["registration_approval_date"] = datetime.datetime.now(
-#             datetime.timezone.utc
-#         ).isoformat()
+    if "approved" in updates and updates["approved"]:
+        updates["registration_approval_date"] = datetime.datetime.now(
+            datetime.timezone.utc
+        ).isoformat()
+        send_mail(
+            "Registration approved.",
+            "Your registration for the CIDC website has now been approved.",
+            [current_user],
+            "no-reply@cimac-network.org",
+            SENDGRID_API_KEY,
+        )
 
 
 # On updated user.
@@ -492,7 +507,7 @@ def process_data_upload(item: dict, original: dict) -> None:
     """
     google_path = app.config["GOOGLE_URL"] + app.config["GOOGLE_FOLDER_PATH"]
     start_celery_task(
-        "framework.tasks.cromwell_tasks.move_files_from_staging",
+        "framework.tasks.storage_tasks.move_files_from_staging",
         [original, google_path],
         12345,
     )
@@ -534,9 +549,6 @@ def log_patch_request(resource: str, request: str, payload: dict) -> None:
         resource {str} -- Resource endpoint being queried.
         request {str} -- Request being sent to endpoint.
         payload {dict} -- Payload of the patch request.
-
-    Returns:
-        None -- [description]
     """
     current_user = get_current_user()["email"]
     # Log the request
