@@ -421,7 +421,7 @@ def add_hooks():
     # Accounts hooks
     APP.on_inserted_accounts += hooks.log_user_create  # pylint: disable=E1101
     APP.on_updated_accounts += hooks.log_user_modified  # pylint: disable=E1101
-    # APP.on_update_accounts += hooks.manage_user_updates
+    APP.on_update_accounts += hooks.manage_user_updates
     APP.on_inserted_accounts_info += hooks.log_user_create  # pylint: disable=E1101
     APP.on_insert_accounts_create += hooks.register_new_user  # pylint: disable=E1101
     APP.on_deleted_item_accounts += hooks.remove_deleted_user  # pylint: disable=E1101
