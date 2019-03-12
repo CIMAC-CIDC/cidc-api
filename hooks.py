@@ -357,26 +357,13 @@ def manage_user_updates(updates: dict, original: dict) -> None:
         updates {dict} -- [description]
         original {dict} -- [description]
     """
-    try:
-        current_user = get_current_user()["email"]
-    except AttributeError as attr_err:
-        log = (
-            "Unable to determine source of user modification. Aborting. :%s" % attr_err
-        )
-        logging.error({"message": log, "category": "ERROR-EVE-FAIR"})
-        abort(500, "NO_ADMIN_FOUND")
-
     if "approved" in updates and updates["approved"]:
         updates["registration_approval_date"] = datetime.datetime.now(
             datetime.timezone.utc
         ).isoformat()
-        send_mail(
-            "Registration approved.",
-            "Your registration for the CIDC website has now been approved.",
-            [current_user],
-            "no-reply@cimac-network.org",
-            SENDGRID_API_KEY,
-        )
+        logging.info({"message": "Approval recorded", "category": "INFO-EVE-NEWUSER"})
+    else:
+        logging.info({"message": "No approval", "category": "INFO-EVE-NEWUSER"})
 
 
 # On updated user.
@@ -413,6 +400,13 @@ def log_user_modified(updates: dict, original: dict) -> None:
                 "framework.tasks.administrative_tasks.change_upload_permission",
                 [GOOGLE_UPLOAD_BUCKET, [original["email"]], True],
                 8787878,
+            )
+            send_mail(
+                "Registration approved.",
+                "Your registration for the CIDC website has now been approved.",
+                [original["email"]],
+                "no-reply@cimac-network.org",
+                SENDGRID_API_KEY,
             )
         if updates["role"] == "disabled":
             # Revoke upload access
