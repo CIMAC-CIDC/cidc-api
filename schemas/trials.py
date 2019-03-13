@@ -57,6 +57,10 @@ TRIALS = {
                 'type': 'string',
             }
         },
+        'locked': {
+            'type': 'boolean',
+            'required': True
+        }
     },
 }
 

@@ -170,6 +170,7 @@ DATA_AGG_INPUTS = {
                                 "file_name": "$file_name",
                                 "gs_uri": "$gs_uri",
                                 "mapping": "$mapping",
+                                "data_format": "$data_format",
                                 '_id': '$_id'
                             }
                         }

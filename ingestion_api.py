@@ -444,6 +444,7 @@ def add_hooks():
 
     # Trials hooks
     APP.on_updated_trials += hooks.updated_trial  # pylint: disable=E1101
+
     # Analysis Hooks
 
     # Pre get filter hook.

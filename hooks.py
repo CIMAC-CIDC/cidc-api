@@ -145,6 +145,21 @@ def find_duplicates(items: List[dict]) -> List[str]:
     return [x["file_name"] for x in data_results]
 
 
+def check_trial_locked(trial_id: str) -> bool:
+    """
+    Check if a trial is locked.
+
+    Arguments:
+        trial_id {str} -- Id of trial to check.
+
+    Returns:
+        bool -- [description]
+    """
+    trials = app.data.driver.db["trials"]
+    locked = trials.find_one({"_id": trial_id, "locked": True})
+    return bool(locked)
+
+
 # On insert ingestion.
 def register_upload_job(items: List[dict]) -> None:
     """
@@ -165,6 +180,8 @@ def register_upload_job(items: List[dict]) -> None:
         record["started_by"] = current_user
         log = "Upload job started by: %s\n" % current_user
         for data_item in record["files"]:
+            if check_trial_locked(data_item["trial"]):
+                abort(401, "This trial has been locked, you may not upload files to it")
             log += "Concerning trial: %s On Assay: %s\n" % (
                 str(data_item["trial"]),
                 str(data_item["assay"]),
@@ -213,13 +230,18 @@ def updated_trial(updates: dict, original: dict) -> None:
     """
     new_collabs = updates["collaborators"]
     old_collabs = original["collaborators"]
+    admin = get_current_user()["email"]
+
+    if "locked" in updates and updates["locked"] != original["locked"]:
+        verb = "unlocked" if updates["locked"] else "locked"
+        log = "Trial %s %s by administrator %s" % (original["trial_name"], verb, admin)
+        logging.info({"message": log, "category": "INFO-EVE-TRIALLOCK"})
+
     if new_collabs == old_collabs:
         return
 
     # Determine to be added
     to_add = list(filter(lambda x: x not in old_collabs, new_collabs))
-
-    admin = get_current_user()["email"]
     start_celery_task(
         "framework.tasks.administrative_tasks.grant_trial_access",
         [to_add, admin, original],
@@ -433,7 +455,7 @@ def serialize_objectids(items: List[dict]) -> None:
         record["processed"] = False
         record["visibility"] = True
         record["children"] = []
-        log = "Record %s  for trial %s in assay %s uploaded" % (
+        log = "Record: %s, for Trial: %s, in Assay: %s uploaded" % (
             record["file_name"],
             str(record["trial"]),
             str(record["assay"]),

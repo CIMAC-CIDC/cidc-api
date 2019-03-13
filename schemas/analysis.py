@@ -40,6 +40,12 @@ ANALYSIS = {
                 'type': 'string'
             },
         },
+        'snakemake_log_tails': {
+            'type': 'list',
+            'schema': {
+                'type': 'string'
+            }
+        },
         'jobs': {
             'type': 'list',
             'schema': {
@@ -50,6 +56,12 @@ ANALYSIS = {
                         'required': True
                     },
                     'log_locations': {
+                        'type': 'list',
+                        'schema': {
+                            'type': 'string'
+                        }
+                    },
+                    'log_tails': {
                         'type': 'list',
                         'schema': {
                             'type': 'string'
@@ -108,9 +120,13 @@ ANALYSIS = {
                     'data_id': {
                         'type': 'objectid',
                         'required': True
-                    }
-                }
-            }
+                    },
+                    'data_format': {
+                        'type': 'string',
+                        'required': True
+                    },
+                },
+            },
         },
         'files_generated': {
             'type': 'list',
@@ -128,7 +144,11 @@ ANALYSIS = {
                     'data_id': {
                         'type': 'objectid',
                         'required': True
-                    }
+                    },
+                    'data_format': {
+                        'type': 'string',
+                        'required': True
+                    },
                 }
             }
         }
