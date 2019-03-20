@@ -114,7 +114,7 @@ DATA_EDIT = {
     "allowed_roles": ["admin", "system"],
     "allowed_item_roles": ["admin", "system"],
     "resource_methods": ["POST"],
-    "item_methods": ["PATCH"],
+    "item_methods": ["PATCH", "DELETE"],
     "datasource": {
         'source': 'data',
     },

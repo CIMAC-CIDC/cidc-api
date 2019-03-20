@@ -439,7 +439,6 @@ def add_hooks():
     APP.on_updated_data += hooks.data_patched  # pylint: disable=E1101
     APP.on_inserted_data_edit += hooks.check_for_analysis  # pylint: disable=E1101
     APP.on_insert_data_edit += hooks.serialize_objectids  # pylint: disable=E1101
-    APP.on_update_data_vis += hooks.user_visibility_toggle  # pylint: disable=E1101
     APP.on_fetched_item_data += hooks.generate_signed_url  # pylint: disable=E1101
 
     # Trials hooks

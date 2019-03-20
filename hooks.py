@@ -9,7 +9,7 @@ import time
 import urllib
 from typing import List
 
-from cidc_utils.loghandler.stack_driver_handler import send_mail
+from cidc_utils.loghandler.stack_driver_handler import send_mail, log_formatted
 from bson import ObjectId, json_util
 from flask import _request_ctx_stack, abort
 from flask import current_app as app
@@ -228,25 +228,25 @@ def updated_trial(updates: dict, original: dict) -> None:
     Returns:
         None -- [description]
     """
-    new_collabs = updates["collaborators"]
-    old_collabs = original["collaborators"]
     admin = get_current_user()["email"]
+
+    if "collaborators" in updates:
+        new_collabs = updates["collaborators"]
+        old_collabs = original["collaborators"]
+        if new_collabs == old_collabs:
+            return
+        # Determine to be added
+        to_add = list(filter(lambda x: x not in old_collabs, new_collabs))
+        start_celery_task(
+            "framework.tasks.administrative_tasks.grant_trial_access",
+            [to_add, admin, original],
+            474747,
+        )
 
     if "locked" in updates and updates["locked"] != original["locked"]:
         verb = "unlocked" if updates["locked"] else "locked"
         log = "Trial %s %s by administrator %s" % (original["trial_name"], verb, admin)
         logging.info({"message": log, "category": "INFO-EVE-TRIALLOCK"})
-
-    if new_collabs == old_collabs:
-        return
-
-    # Determine to be added
-    to_add = list(filter(lambda x: x not in old_collabs, new_collabs))
-    start_celery_task(
-        "framework.tasks.administrative_tasks.grant_trial_access",
-        [to_add, admin, original],
-        474747,
-    )
 
 
 # On updated data.
@@ -261,53 +261,16 @@ def data_patched(updates: dict, original: dict) -> None:
     Returns:
         None -- [description]
     """
-    if updates["visibility"] == original["visibility"]:
+    if updates["processed"] == original["processed"]:
         return
 
-    if original["visibility"] < updates["visibility"]:
+    if original["processed"] < updates["processed"]:
+        for key in updates:
+            original[key] = updates[key]
         start_celery_task(
-            "framework.tasks.processing_tasks.postprocessing", [updates], 91011
+            "framework.tasks.processing_tasks.postprocessing", [original], 91011
         )
         return
-
-    children = original["children"]
-    # Delete all derived records.
-    for child in children:
-        collection = app.data.driver.db[child["resource"]]
-        collection.remove({"_id": child["_id"]})
-
-
-# On-update data-vis
-def user_visibility_toggle(updates, original) -> None:
-    """
-    Function for checking if a user has the permission to edit a document.
-
-    Arguments:
-        updates {dict} -- Updates, in this case just the visibility toggle.
-        original {dict} -- Original record.
-
-    Returns:
-        None -- [description]
-    """
-    current_user = get_current_user()
-    accounts = app.data.driver.db["accounts"]
-    perms = accounts.find_one({"email": current_user["email"]}, {"permissions": 1})[
-        "permissions"
-    ]
-    # Check if the user has permissions on this document.
-    allowed = get_document(original["_id"], "data", perms)
-    document = app.data.driver.db["data"].find_one({"_id": original["_id"]})
-
-    # If not, abort, else pass it along to the patch handler.
-    if not allowed:
-        log = (
-            "User: %s attempted to toggle visibility on document %s, permission denied"
-            % (current_user["email"], original["file_name"])
-        )
-        logging.error({"message": log, "category": "ERROR-EVE-PATCH-PERMISSION"})
-        abort(401, "You do not have permission to perform this aciton")
-    else:
-        data_patched(updates, document)
 
 
 # On-inserted accounts.
@@ -388,6 +351,29 @@ def manage_user_updates(updates: dict, original: dict) -> None:
         logging.info({"message": "No approval", "category": "INFO-EVE-NEWUSER"})
 
 
+def create_approval_email(user: dict) -> str:
+    """
+    Creates the registration approval email.
+
+    Arguments:
+        user {dict} -- User record from /accounts
+
+    Returns:
+        str -- Formatted email.
+    """
+    return '''
+    Dear %s %s:
+
+    Your registration for the CIMAC-CIDC DATA Portal has now been approved.
+    To continue, please go to: https://portal.cimac-network.org.
+
+    If you have any questions, please email us at: cidc@jimmy.harvard.edu.
+
+    Thanks,
+    The CIDC Project Team
+    ''' % (user["first_n"], user["last_n"])
+
+
 # On updated user.
 def log_user_modified(updates: dict, original: dict) -> None:
     """
@@ -424,9 +410,9 @@ def log_user_modified(updates: dict, original: dict) -> None:
                 8787878,
             )
             send_mail(
-                "Registration approved.",
-                "Your registration for the CIDC website has now been approved.",
-                [original["email"]],
+                "Subject: CIMAC-CIDC Data Portal Registration Approved",
+                create_approval_email(original),
+                [original["preferred_contact_email"]],
                 "no-reply@cimac-network.org",
                 SENDGRID_API_KEY,
             )
@@ -460,7 +446,7 @@ def serialize_objectids(items: List[dict]) -> None:
             str(record["trial"]),
             str(record["assay"]),
         )
-        logging.info({"message": log, "category": "INFO-EVE-DATA"})
+        log_formatted(logging.info, log, "INFO-EVE-DATA")
 
 
 # On delete gene_symbol.
@@ -473,8 +459,9 @@ def drop_gene_symbol(item):
     """
     symbols = app.data.driver.db["gene_symbol"]
     symbols.remove({})
-    log = "Gene collection dropped by celery"
-    logging.info({"message": log, "category": "INFO-EVE-HUGO"})
+    logging.info(
+        {"message": "Gene collection dropped by celery", "category": "INFO-EVE-HUGO"}
+    )
 
 
 def start_celery_task(task: str, arguments: List[object], task_id: int) -> None:
@@ -645,7 +632,8 @@ def log_delete_request(resource: str, request: str, payload: dict) -> None:
 
 
 def generate_signed_url(response: dict) -> None:
-    """[summary]
+    """
+    Generates a signed URL.
 
     Arguments:
         response {dict} -- [description]

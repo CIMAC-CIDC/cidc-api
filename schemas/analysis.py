@@ -4,9 +4,9 @@ Validator for Analysis data.
 ANALYSIS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
-    'item_methods': ['PATCH', 'GET'],
-    'allowed_roles': ['admin', 'superuser', 'user', 'system', 'uploader'],
-    'allowed_item_roles': ['admin', 'superuser', 'user', 'system', 'uploader'],
+    'item_methods': ['PATCH', 'GET', 'DELETE'],
+    'allowed_roles': ['admin', 'superuser', 'system'],
+    'allowed_item_roles': ['admin', 'superuser', 'system'],
     'schema': {
         'start_date': {
             'type': 'string'
