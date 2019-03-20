@@ -114,7 +114,7 @@ DATA_EDIT = {
     "allowed_roles": ["admin", "system"],
     "allowed_item_roles": ["admin", "system"],
     "resource_methods": ["POST"],
-    "item_methods": ["PATCH"],
+    "item_methods": ["PATCH", "DELETE"],
     "datasource": {
         'source': 'data',
     },
@@ -170,6 +170,7 @@ DATA_AGG_INPUTS = {
                                 "file_name": "$file_name",
                                 "gs_uri": "$gs_uri",
                                 "mapping": "$mapping",
+                                "data_format": "$data_format",
                                 '_id': '$_id'
                             }
                         }

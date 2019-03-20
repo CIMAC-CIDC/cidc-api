@@ -8,7 +8,7 @@ from schemas.fielder import fielder
 TRIALS = {
     'public_methods': [],
     'resource_methods': ['GET', 'POST'],
-    'item_methods': ['PATCH'],
+    'item_methods': ['PATCH', 'GET'],
     'allowed_read_roles': ['user', 'uploader', 'system'],
     'allowed_roles': ['admin', 'superuser', 'system'],
     'allowed_item_read_roles': ['user', 'uploader', 'system'],
@@ -57,6 +57,10 @@ TRIALS = {
                 'type': 'string',
             }
         },
+        'locked': {
+            'type': 'boolean',
+            'required': True
+        }
     },
 }
 
