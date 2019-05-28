@@ -16,7 +16,7 @@ from flask import current_app as app
 from kombu import Connection, Exchange, Producer
 from oauth2client.service_account import ServiceAccountCredentials
 
-from settings import GOOGLE_UPLOAD_BUCKET, RABBIT_MQ_ADDRESS, SENDGRID_API_KEY
+from settings import GOOGLE_UPLOAD_BUCKET, GOOGLE_BUCKET_NAME, GOOGLE_URL, RABBIT_MQ_ADDRESS, SENDGRID_API_KEY
 
 CREDS = ServiceAccountCredentials.from_json_keyfile_name("../auth/.google_auth.json")
 CLIENT_ID = CREDS.service_account_email
@@ -56,7 +56,7 @@ def update_last_access(email: str):
 def sign_url(
     bucket_object: str,
     expires_after_seconds: int = 6,
-    bucket: str = "lloyd-test-pipeline",
+    bucket: str = GOOGLE_BUCKET_NAME,
 ) -> str:
     """
     Function that generates signed URLs.
@@ -66,7 +66,7 @@ def sign_url(
 
     Keyword Arguments:
         expires_after_seconds {int} -- Length of time url is valid. (default: {6})
-        bucket {str} -- The google storage bucket the file is in. (default: {"lloyd-test-pipeline"})
+        bucket {str} -- The google storage bucket the file is in. (default: {settings.GOOGLE_BUCKET_NAME})
 
     Returns:
         str -- A signed download url.
@@ -643,7 +643,7 @@ def generate_signed_url(response: dict) -> None:
     """
     url = response["gs_uri"]
     signed_url = sign_url(
-        url.replace("gs://lloyd-test-pipeline/", ""), expires_after_seconds=1000
+        url.replace(GOOGLE_URL, ""), expires_after_seconds=1000
     )
     response["download_link"] = signed_url
 
